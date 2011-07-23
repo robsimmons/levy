@@ -6,7 +6,6 @@
 %token TBOOL
 %token TFORGET
 %token TFREE
-%token TARROW
 %token <Syntax.name> VAR
 %token <int> INT
 %token TRUE FALSE
@@ -38,7 +37,7 @@
 %nonassoc EQUAL LESS
 %left PLUS MINUS
 %left TIMES
-%right TARROW
+%right TFREE TFORGET
 
 %%
 
