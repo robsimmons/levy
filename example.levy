@@ -68,6 +68,8 @@ fun x : int -> return x ;;
 fun x : U F int -> force x ;;
 fun x : U F U F int -> (force x to y in force y) ;;
 fun x : U F U F U F int -> (force x to y in force y to z in force z) ;;
+fun x : int -> return (thunk (return x)) ;; 
+fun x : int -> return (thunk (return (thunk (return x)))) ;; 
 
 # For convenience we have top-level definitions of values.
 
