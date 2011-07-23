@@ -62,6 +62,13 @@ return (3 + 5) to x in  return (x * x) ;;
 #    return (x * x)
 #
 
+# free and forgetful types
+
+fun x : int -> return x ;;
+fun x : U F int -> force x ;;
+fun x : U F U F int -> (force x to y in force y) ;;
+fun x : U F U F U F int -> (force x to y in force y to z in force z) ;;
+
 # For convenience we have top-level definitions of values.
 
 let a = 5 ;;
