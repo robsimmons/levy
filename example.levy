@@ -7,7 +7,8 @@
 # levy> $use "example.levy"
 
 
-# Basic arithmetic (notice that we do NOT have unary minus):
+# Basic arithmetic:
+-4 + -3 ;;
 2 + 2 ;;
 2 * 3 ;;
 2 - 4 ;;
