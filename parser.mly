@@ -30,7 +30,7 @@
 %start toplevel
 %type <Syntax.toplevel_cmd list> toplevel
 
-%nonassoc TO PERIOD
+%nonassoc TO 
 %nonassoc LET IN
 %nonassoc FUN ARROW REC IS
 %nonassoc IF THEN ELSE
