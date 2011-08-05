@@ -15,5 +15,22 @@ match 5 < 4 with
   | true -> return 4
   | false -> return 5 ;;
 
-# but we also don't do exahustiveness checking currently, so 
+# but we also don't do exahustiveness checking currently, so the following
+# will raise an error at runtime.
 # match 5 < 4 with | true -> return 4 ;; 
+
+# By adding match statements, we get the equivalent of "switch" in c:
+
+let f = thunk (fun x: int ->
+  match x with
+    | 1 -> return 4
+    | 2 -> return 3
+    | 3 -> return 2
+    | 4 -> return 1
+    | 5 -> return 0
+    | y -> return (x + y)) ;;
+
+(force f) 1 ;;
+(force f) 3 ;;
+(force f) 5 ;;
+(force f) 7 ;;

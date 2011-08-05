@@ -2,6 +2,11 @@
 
 open Syntax
 
+module IntSet = 
+  Set.Make(struct type t = int let compare = compare end)
+module StringSet = 
+  Map.Make(struct type t = string let compare = String.compare end)
+
 (** Exception indicating a type-checking error. *)
 exception Type_error of string
 
@@ -38,6 +43,10 @@ let pat_ty ty = function
       if ty = VConst ([], "bool") then [] else 
         type_error 
           ("constant true not a constructor of type " ^ string_of_type ty) 
+  | Int _ ->
+      if ty = VInt then [] else 
+        type_error 
+          ("integer constant not is not of type " ^ string_of_type ty)
   | pat -> type_error (string_of_expr pat ^ " not a valid pattern")
 
 (** [check ctx ty e] checks that expression [e] has computation

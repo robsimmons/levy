@@ -38,6 +38,10 @@ let rec matchpat v = function
       (match v with 
          | VConst c' -> if c = c' then Some ([], e) else None
          | _ -> runtime_error "type error in match?")
+  | (Int i, e) -> 
+      (match v with
+         | VInt i' -> if i = i' then Some ([], e) else None
+         | _ -> runtime_error "type error in match?")
   | (Var x, e) -> Some ([ (x, v) ], e)
   | _ -> runtime_error "bad pattern"
 
