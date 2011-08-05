@@ -10,7 +10,8 @@
     }
 }
 
-let var = ['_' 'a'-'z' 'A'-'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
+let uvar = ['A'-'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
+let lvar = ['_' 'a'-'z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
 
 rule token = parse
   | '#' [^'\n']* '\n' { incr_linenum lexbuf; token lexbuf }
@@ -54,7 +55,8 @@ rule token = parse
   | '<'             { LESS }
   | '='             { EQUAL }
 
-  | var             { VAR (lexeme lexbuf) }
+  | lvar            { VAR (lexeme lexbuf) }
+  | uvar            { UVAR (lexeme lexbuf) }
   | eof             { EOF }
 
 {

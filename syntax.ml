@@ -6,11 +6,11 @@ type name = string
 (** Levy types are separated into value types and computation types, but
     it is convenient to have a single datatype for all of them. *)
 type ltype =
-  | VInt                     (** integer [int] *)
-  | VBool                    (** booleans [bool] *)
-  | VForget of ctype         (** thunked type [U t] *)
-  | CFree of vtype           (** free type [F s] *)
-  | CArrow of vtype * ctype  (** Function type [s -> t] *)
+  | VInt                        (** integer [int] *)
+  | VConst of vtype list * name (** defined inductive types *)
+  | VForget of ctype            (** thunked type [U t] *)
+  | CFree of vtype              (** free type [F s] *)
+  | CArrow of vtype * ctype     (** Function type [s -> t] *)
 
 and vtype = ltype
 
@@ -22,10 +22,12 @@ and ctype = ltype
 
 type value = expr
 
+and pattern = expr
+
 and expr =
   | Var of name            	  (** variable *)
+  | Const of name            	  (** defined constant *)
   | Int of int             	  (** integer constant *)
-  | Bool of bool           	  (** boolean constant *)
   | Times of value * value 	  (** product [v1 * v2] *)
   | Plus of value * value  	  (** sum [v1 + v2] *)
   | Minus of value * value 	  (** difference [v1 - v2] *)
@@ -35,11 +37,15 @@ and expr =
   | Force of value             	  (** [force v] *)
   | Return of value            	  (** [return v] *)
   | To of expr * name * expr  	  (** sequencing [e1 to x . e2] *)
-  | Let of name * value * expr   (** let-binding [let x = v in e] *)
-  | If of value * expr * expr  	  (** conditional [if v then e1 else e2] *)
+  | Case of value * matches       (** case analysis [match x with ...] *)
   | Fun of name * ltype * expr 	  (** function [fun x:s -> e] *)
   | Apply of expr * value      	  (** application [e v] *)
   | Rec of name * ltype * expr 	  (** recursion [rec x : t is e] *)
+
+and matches = (pattern * expr) list
+
+let cLet (x, v, e) = Case (v, [ (Var x, e) ])
+let cIf (v, et, ef) = Case (v, [ (Const "true", et); (Const "false", ef) ])
 
 (** Toplevel commands *)
 type toplevel_cmd =
@@ -54,7 +60,9 @@ let string_of_type ty =
     let (m, str) =
       match ty with
 	| VInt -> (3, "int")
-	| VBool -> (3, "bool")
+	| VConst ([], a) -> (3, a)
+	| VConst (ty1 :: tys, a) -> 
+          (1, (to_str 1 ty1) ^ " -o " ^ (to_str 0 (VConst (tys, a))))
 	| VForget ty -> (2, "U " ^ to_str 1 ty)
 	| CFree ty -> (2, "F " ^ to_str 1 ty)
 	| CArrow (ty1, ty2) -> (1, (to_str 1 ty1) ^ " -> " ^ (to_str 0 ty2))
@@ -65,12 +73,13 @@ let string_of_type ty =
 
 (** Conversion from an expression to a string *)
 let string_of_expr e =
-  let rec to_str n e =
+  let rec to_str_cases cases = "..." 
+    and to_str n e =
     let (m, str) =
       match e with
 	| Int n ->           (10, string_of_int n)
-	| Bool b ->          (10, string_of_bool b)
 	| Var x ->           (10, x)
+	| Const x ->         (10, x)
 	| Return e ->        ( 9, "return " ^ (to_str 9 e))
 	| Force e ->         ( 9, "force " ^ (to_str 9 e))
 	| Thunk e ->         ( 9, "thunk " ^ (to_str 9 e))
@@ -80,10 +89,9 @@ let string_of_expr e =
 	| Minus (e1, e2) ->  ( 7, (to_str 6 e1) ^ " - " ^ (to_str 7 e2))
 	| Equal (e1, e2) ->  ( 5, (to_str 5 e1) ^ " = " ^ (to_str 5 e2))
 	| Less (e1, e2) ->   ( 5, (to_str 5 e1) ^ " < " ^ (to_str 5 e2))
-	| If (e1, e2, e3) -> ( 4, "if " ^ (to_str 4 e1) ^ " then " ^ (to_str 4 e2) ^ " else " ^ (to_str 4 e3))
+        | Case (e, cases) ->( 4, "match " ^ (to_str 4 e) ^ " with " ^ (to_str_cases cases))
 	| Fun (x, ty, e) ->  ( 2, "fun " ^ x ^ " : " ^ (string_of_type ty) ^ " -> " ^ (to_str 0 e))
 	| Rec (x, ty, e) ->  ( 2, "rec " ^ x ^ " : " ^ (string_of_type ty) ^ " is " ^ (to_str 0 e))
-	| Let (x, e1, e2) ->( 1, "let " ^ x ^ " = " ^ to_str 1 e1 ^ " in " ^ to_str 0 e2)
 	| To (e1, x, e2) ->  ( 1, to_str 1 e1 ^ " to " ^ x ^ " . " ^ to_str 0 e2)
     in
       if m > n then str else "(" ^ str ^ ")"
@@ -94,18 +102,22 @@ let string_of_expr e =
     of variables [x1], ..., [xn] with expressions [e1], ..., [en]. *)
 let rec subst s = function
   | (Var x) as e -> (try List.assoc x s with Not_found -> e)
-  | (Int _ | Bool _) as e -> e
+  | (Int _ | Const _) as e -> e
   | Times (e1, e2) -> Times (subst s e1, subst s e2)
   | Plus (e1, e2) -> Plus (subst s e1, subst s e2)
   | Minus (e1, e2) -> Minus (subst s e1, subst s e2)
   | Equal (e1, e2) -> Equal (subst s e1, subst s e2)
   | Less (e1, e2) -> Less (subst s e1, subst s e2)
-  | If (e1, e2, e3) -> If (subst s e1, subst s e2, subst s e3)
+  | Case (e, cases) -> Case (subst s e, List.map (subst_case s) cases)
   | Fun (x, ty, e) -> let s' = List.remove_assoc x s in Fun (x, ty, subst s' e)
-  | Let (x, e1, e2) -> Let (x, subst s e1, subst (List.remove_assoc x s) e2)
   | To (e1, x, e2) -> To (subst s e1, x, subst (List.remove_assoc x s) e2)
   | Return e -> Return (subst s e)
   | Force e -> Force (subst s e)
   | Thunk e -> Thunk (subst s e)
   | Apply (e1, e2) -> Apply (subst s e1, subst s e2)
   | Rec (x, ty, e) -> let s' = List.remove_assoc x s in Rec (x, ty, subst s' e)
+
+and subst_case s = function
+  | (Var x, e) -> (Var x, subst (List.remove_assoc x s) e)
+  | (pat, e) -> (pat, subst s e)
+  (* XXX ASSUMES THAT THERE AREN'T CONSTANTS WITH ARGUMENTS *)

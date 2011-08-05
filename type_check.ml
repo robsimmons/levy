@@ -9,20 +9,36 @@ exception Type_error of string
 let type_error msg = raise (Type_error ("Type error: " ^ msg))
 
 let rec is_ctype = function
-  | (VInt | VBool | VForget _) -> false
+  | (VInt | VConst _ | VForget _) -> false
   | CFree ty -> is_vtype ty
   | CArrow (ty1, ty2) -> is_vtype ty1 && is_ctype ty2
 
 and is_vtype = function
-  | VInt | VBool -> true
+  | (VInt | VConst _) -> true
   | VForget ty -> is_ctype ty
   | (CFree _ | CArrow _) -> false
 
 let check_ctype ty =
-  if not (is_ctype ty) then type_error (string_of_type ty ^ " is not a computation type")
+  if not (is_ctype ty) 
+  then type_error (string_of_type ty ^ " is not a computation type")
 
 let check_vtype ty =
-  if not (is_vtype ty) then type_error (string_of_type ty ^ " is not a value type")
+  if not (is_vtype ty) 
+  then type_error (string_of_type ty ^ " is not a value type")
+
+(** [pat_ty ty pat] checks that the pattern [pat] is a valid pattern of type
+    [ty] and generates the extended context produced by that pattern. *)
+let pat_ty ty = function
+  | Var x -> [ (x, ty) ]
+  | Const "true" -> 
+      if ty = VConst ([], "bool") then [] else 
+        type_error 
+          ("constant true not a constructor of type " ^ string_of_type ty) 
+  | Const "false" -> 
+      if ty = VConst ([], "bool") then [] else 
+        type_error 
+          ("constant true not a constructor of type " ^ string_of_type ty) 
+  | pat -> type_error (string_of_expr pat ^ " not a valid pattern")
 
 (** [check ctx ty e] checks that expression [e] has computation
     type [ty] in context [ctx].  It raises [Type_error] if it does
@@ -34,6 +50,21 @@ let rec check ctx ty e =
 	(string_of_expr e ^ " has type " ^ string_of_type ty' ^
 	   " but is used as if it had type " ^ string_of_type ty)
 
+(** [type_of_cases ctx ty cases] computes the type of the match expressions 
+    [cases] matching against a value of type [ty] in the context [ctx].
+    It raises [Type_error] if any arms do not typecheck or disagree on type. *)
+and type_of_cases ctx ty = function
+  | [] -> (function
+      | None -> type_error "no cases in match expression"
+      | Some ty -> check_ctype ty ; ty)
+  | (pat, e) :: cases -> (function
+    | None -> 
+        let tyc = type_of (pat_ty ty pat @ ctx) e in
+          type_of_cases ctx ty cases (Some tyc) 
+    | Some tyc -> 
+        check (pat_ty ty pat @ ctx) tyc e ;
+        type_of_cases ctx ty cases (Some tyc))
+
 (** [type_of ctx e] computes the type of expression [e] in context [ctx].
     It raises [Type_error] if [e] does not have a type. *)
 and type_of ctx = function
@@ -43,16 +74,19 @@ and type_of ctx = function
        with
 	   Not_found -> type_error ("unknown identifier " ^ x))
   | Int _ -> VInt
-  | Bool _ -> VBool
+  | Const "true" -> VConst ([], "bool")
+  | Const "false" -> VConst ([], "bool")
+  | Const c -> type_error ("unknown constructor " ^ c)
   | Times (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VInt
   | Plus (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VInt
   | Minus (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VInt
-  | Equal (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VBool
-  | Less (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VBool
-  | If (e1, e2, e3) ->
-      check ctx VBool e1 ;
-      let ty = type_of ctx e2 in
-	check_ctype ty ; check ctx ty e3 ; ty
+  | Equal (e1, e2) -> 
+      check ctx VInt e1 ; check ctx VInt e2 ; VConst ([], "bool")
+  | Less (e1, e2) -> 
+      check ctx VInt e1 ; check ctx VInt e2 ; VConst ([], "bool")
+  | Case (e, cases) ->
+      let ty = type_of ctx e in
+        type_of_cases ctx ty cases None
   | Fun (x, ty, e) ->
       check_vtype ty ;
       let ty2 = type_of ((x,ty)::ctx) e in
@@ -73,11 +107,6 @@ and type_of ctx = function
 	 | ty -> type_error (string_of_expr e1 ^
 			    " is used in sequencing but its type is " ^
 			    string_of_type ty))
-  | Let (x, e1, e2) ->
-      let ty1 = type_of ctx e1 in
-	check_vtype ty1;
-	let ty2 = type_of ((x,ty1)::ctx) e2 in
-	  check_ctype ty2 ; ty2
   | Return e ->
       let ty = type_of ctx e in
 	check_vtype ty ; CFree ty
