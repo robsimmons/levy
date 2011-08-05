@@ -28,8 +28,9 @@ http://www.cs.bham.ac.uk/~pbl/cbpv.html
 2. AUTHOR
 
 The authors of the program are Matija Pretnar <matija@pretnar.info>,
-and Andrej Bauer <Andrej.Bauer@andrej.com>.  See the file
-COPYRIGHT.txt for license information.
+and Andrej Bauer <Andrej.Bauer@andrej.com>, with modifications by
+Robert Simmons <robsimmons@gmail.com>.  See the file COPYRIGHT.txt for 
+license information.
 
 3. REQUIREMENTS
 
