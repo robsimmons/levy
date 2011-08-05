@@ -1,0 +1,19 @@
+# This example file demonstrates match statements
+
+let x = 5 in return (x + 9) ;;
+
+# really just parses as
+
+match 5 with 
+  | x -> return (x + 9) ;;
+
+# we also desugar if statements to match statements to 
+
+if 5 < 4 then return 4 else return 5 ;; 
+
+match 5 < 4 with
+  | true -> return 4
+  | false -> return 5 ;;
+
+# but we also don't do exahustiveness checking currently, so 
+# match 5 < 4 with | true -> return 4 ;; 

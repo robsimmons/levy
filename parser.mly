@@ -27,10 +27,12 @@
 %token USE
 %token <string>STRING
 %token EOF
+%token MATCH WITH PIPE END
 
 %start toplevel
 %type <Syntax.toplevel_cmd list> toplevel
 
+%right PIPE
 %nonassoc TO 
 %nonassoc LET IN
 %nonassoc FUN ARROW REC IS
@@ -76,7 +78,12 @@ expr:
   | IF expr THEN expr ELSE expr  { cIf ($2, $4, $6) }
   | FUN VAR COLON ty ARROW expr  { Fun ($2, $4, $6) }
   | REC VAR COLON ty IS expr     { Rec ($2, $4, $6) }
+  | MATCH expr WITH PIPE cases   { Case ($2, $5) }
   
+cases: 
+  | expr ARROW expr              { [ ($1, $3) ] }
+  | cases PIPE cases             { $1 @ $3 }
+
 app:
   | non_app                      { $1 }
   | FORCE non_app                { Force $2 }

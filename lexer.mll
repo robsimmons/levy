@@ -33,12 +33,14 @@ rule token = parse
   | "in"            { IN }
   | "is"            { IS }
   | "let"           { LET }  
+  | "match"         { MATCH }
   | "rec"           { REC }
   | "return"        { RETURN }
   | "then"          { THEN }
   | "thunk"         { THUNK }
   | "to"            { TO }
   | "true"          { TRUE }
+  | "with"          { WITH }
 
   | "$use"           { USE }
   | "$quit"          { QUIT }
@@ -46,6 +48,7 @@ rule token = parse
   | '\"' [^'\"']* '\"' { let str = lexeme lexbuf in
 			STRING (String.sub str 1 (String.length str - 2)) }
 
+  | '|'             { PIPE }
   | '('             { LPAREN }
   | ')'             { RPAREN }
   | '*'             { TIMES }
