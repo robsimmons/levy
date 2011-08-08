@@ -95,9 +95,8 @@ let pat_ty ty = function
           ("integer constant not is not of type " ^ string_of_type ty)
   | pat -> type_error (string_of_expr pat ^ " not a valid pattern")
 
-(** [check ctx ty e] checks that expression [e] has
-    type [ty] in context [ctx].  It raises [Type_error] if it does
-    not. *)
+(** [check ctx ty e] checks that expression [e] has type [ty] in context [ctx].
+    It raises [Type_error] if it does not. *)
 let rec check ctx ty e =
   let ty' = type_of ctx e in
     if ty' <> ty then
