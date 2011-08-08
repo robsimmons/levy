@@ -41,6 +41,10 @@ let rec filter f = function
      | None -> filter f xs
      | Some y -> Some y)
 
+let match_failure = function
+  | [] -> runtime_error "Match failure"
+  | _ -> runtime_error "Bad pattern"
+
 let rec interp env = function
   | Var x ->
       (try
@@ -90,10 +94,6 @@ let rec interp env = function
 	 | VThunk (env, e) -> interp env e
 	 | _ -> runtime_error "Thunk expected in force")
   | Rec (x, _, e') as e -> interp ((x, VThunk (env, e)) :: env) e'
-
-and match_failure = function
-  | [] -> runtime_error "Match failure"
-  | _ -> runtime_error "Bad pattern"
 
 and match_int env i = function
   | (Var x, e) :: _ -> interp ((x, VInt i) :: env) e
