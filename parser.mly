@@ -37,11 +37,10 @@
 %right PIPE
 %nonassoc TO 
 %nonassoc LET IN
-%right ARROW 
+%right ARROW LOLLI
 %nonassoc FUN REC IS
 %nonassoc IF THEN ELSE
 %nonassoc EQUAL LESS 
-%right LOLLI
 %left PLUS MINUS
 %left TIMES
 %right TFREE TFORGET
@@ -53,6 +52,7 @@ toplevel:
   | lettop                   { $1 }
   | exprtop                  { $1 }
   | cmdtop                   { $1 }
+  | datatop                  { $1 }
 
 lettop:
   | def EOF                  { [$1] }
@@ -67,11 +67,19 @@ cmdtop:
   | cmd EOF                  { [$1] }
   | cmd SEMICOLON2 toplevel  { $1 :: $3 }
 
+datatop:
+  | DATA data EOF                 { [Data $2] }
+  | DATA data SEMICOLON2 toplevel { Data $2 :: $4 }
+
 cmd:
   | USE STRING { Use $2 }
   | QUIT       { Quit }
 
 def: LET VAR EQUAL expr { Def ($2, $4) }
+
+data:
+  | data PIPE data               { $1 @ $3 }
+  | UVAR COLON ty                { [ ($1, $3) ] }
 
 expr:
   | app                          { $1 }
@@ -114,9 +122,11 @@ boolean:
   | expr LESS expr  { Less ($1, $3) }
 
 ty:
+  | VAR                      { VConst $1 }
   | TINT         	     { VInt }
   | TBOOL	 	     { VConst "bool" }
   | ty ARROW ty              { CArrow ($1, $3) }
+  | ty LOLLI ty              { VLolli ($1, $3) }
   | TFORGET ty               { VForget $2 }
   | TFREE ty                 { CFree $2 }
   | LPAREN ty RPAREN         { $2 }

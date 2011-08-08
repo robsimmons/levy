@@ -6,11 +6,12 @@ type name = string
 (** Levy types are separated into value types and computation types, but
     it is convenient to have a single datatype for all of them. *)
 type ltype =
-  | VInt                        (** integer [int] *)
-  | VConst of name              (** defined inductive types *)
-  | VForget of ctype            (** thunked type [U t] *)
-  | CFree of vtype              (** free type [F s] *)
-  | CArrow of vtype * ctype     (** Function type [s -> t] *)
+  | VInt                          (** integer [int] *)
+  | VConst of name                (** defined inductive types *)
+  | VForget of ctype              (** thunked type [U t] *)
+  | VLolli of vtype * vtype       (** construction type [s -o t] *)
+  | CFree of vtype                (** free type [F s] *)
+  | CArrow of vtype * ctype       (** function type [s -> t] *)
 
 and vtype = ltype
 
@@ -55,10 +56,11 @@ let cApply (e, v) =
 
 (** Toplevel commands *)
 type toplevel_cmd =
-  | Expr of expr       (** an expression to be evaluated *)
-  | Def of name * expr (** toplevel definition [let x = e] *)
-  | Use of string      (** load a file [$use "<filename>"] *)
-  | Quit               (** exit toplevel [$quit] *)
+  | Expr of expr                  (** an expression to be evaluated *)
+  | Def of name * expr            (** toplevel definition [let x = e] *)
+  | Use of string                 (** load a file [$use "<filename>"] *)
+  | Data of (name * ltype) list   (** datatype declaration [data ...] *)
+  | Quit                          (** exit toplevel [$quit] *)
 
 (** Conversion from a type to a string *)
 let string_of_type ty =
@@ -68,6 +70,7 @@ let string_of_type ty =
 	| VInt -> (3, "int")
 	| VConst a -> (3, a)
 	| VForget ty -> (2, "U " ^ to_str 1 ty)
+	| VLolli (ty1, ty2) -> (1, (to_str 1 ty1) ^ " -o " ^ (to_str 0 ty2))
 	| CFree ty -> (2, "F " ^ to_str 1 ty)
 	| CArrow (ty1, ty2) -> (1, (to_str 1 ty1) ^ " -> " ^ (to_str 0 ty2))
     in

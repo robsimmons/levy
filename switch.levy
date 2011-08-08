@@ -34,3 +34,23 @@ let f = thunk (fun x: int ->
 (force f) 3 ;;
 (force f) 5 ;;
 (force f) 7 ;;
+
+# We can also use datatype declarations to define enumerations. The following 
+# declaration defines `Red`, `Blue`, `Yellow`, and `Green` as constructors of 
+# type `color`.
+
+data Red: color
+   | Blue: color
+   | Yellow: color
+   | Green: color ;;
+
+Red ;;
+let colorcode = thunk (fun x: color -> 
+  match x with
+   | Red -> return 0
+   | Blue -> return 1
+   | Green -> return 2
+   | Yellow -> return 3) ;;
+
+(force colorcode) Red ;;
+(force colorcode) Green ;; 

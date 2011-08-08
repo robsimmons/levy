@@ -2,10 +2,10 @@
 
 open Syntax
 
-module IntSet = 
-  Set.Make(struct type t = int let compare = compare end)
-module StringSet = 
+module MapS = 
   Map.Make(struct type t = string let compare = String.compare end)
+let consTable: (name, (vtype list * name)) Hashtbl.t = Hashtbl.create 5
+let dataTable: (name, (vtype list) MapS.t) Hashtbl.t = Hashtbl.create 5
 
 (** Exception indicating a type-checking error. *)
 exception Type_error of string
@@ -17,11 +17,13 @@ let rec is_ctype = function
   | (VInt | VConst _ | VForget _) -> false
   | CFree ty -> is_vtype ty
   | CArrow (ty1, ty2) -> is_vtype ty1 && is_ctype ty2
+  | VLolli _ -> false
 
 and is_vtype = function
   | (VInt | VConst _) -> true
   | VForget ty -> is_ctype ty
   | (CFree _ | CArrow _) -> false
+  | VLolli _ -> false (** VLolli is currently just an intermediate type *)
 
 let check_ctype ty =
   if not (is_ctype ty) 
@@ -30,6 +32,51 @@ let check_ctype ty =
 let check_vtype ty =
   if not (is_vtype ty) 
   then type_error (string_of_type ty ^ " is not a value type")
+
+(** [unfold_lolli collected ty] is a tail recursive function that exposes
+    all the right-nested implications in the type ty to get at the head type *)
+let rec unfold_lolli collected = function
+  | VConst a -> (List.rev collected, a)
+  | VLolli (ty1, ty2) -> check_vtype ty1 ; unfold_lolli (ty1 :: collected) ty2
+  | ty -> type_error (string_of_type ty ^ " is not a valid constructed type")
+
+(** [chk_data to_add data] is a tail recursive function that collects data
+    in the map [to_add]  *)
+let rec chk_data (to_add: vtype list MapS.t MapS.t) = function
+  | [] -> 
+    (* All cases covered, add them to the persistant store *)
+      ignore (MapS.mapi (function a -> function constructors -> 
+        Hashtbl.add dataTable a constructors ;
+        ignore (MapS.mapi (function c -> function tys -> 
+          Hashtbl.add consTable c (tys, a)) constructors)) to_add) 
+  
+  | (c, ty) :: data -> 
+    (* Check for duplicate constructor declarations *)
+      if Hashtbl.mem consTable c 
+      then type_error ("constructor " ^ c ^ " already declared") ;
+      if MapS.exists (function _ -> function constructors ->
+           MapS.exists (function c' -> function _ -> c = c') constructors)
+           to_add
+      then type_error ("constructor " ^ c ^ " duplicated in this declaration") ;
+      let (tys, a) = unfold_lolli [] ty in 
+    (* Check that we're not extending previous datatype declarations *)
+      if Hashtbl.mem dataTable a
+      then type_error ("type " ^ a ^ " cannot be extended") ;
+    (* Either extend an existing type map or add a new one *)
+      if MapS.mem a to_add 
+      then chk_data (MapS.add a (MapS.singleton c tys) to_add) data
+      else chk_data 
+        (MapS.add a (MapS.add c tys (MapS.find a to_add)) to_add) data
+
+(** [check_data data] checkes the well-formedness of the data declarations 
+    [data] and loads information into the global tables *)
+let check_data = 
+  let initial_data =  
+    MapS.singleton "bool" 
+      (MapS.add "true" []
+        (MapS.add "false" []
+          MapS.empty)) in
+  chk_data initial_data
 
 (** [pat_ty ty pat] checks that the pattern [pat] is a valid pattern of type
     [ty] and generates the extended context produced by that pattern. *)
