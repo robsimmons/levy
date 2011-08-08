@@ -24,9 +24,8 @@ let check_ctype ty =
 let check_vtype ty =
   if not (is_vtype ty) then type_error (string_of_type ty ^ " is not a value type")
 
-(** [check ctx ty e] checks that expression [e] has
-    type [ty] in context [ctx].  It raises [Type_error] if it does
-    not. *)
+(** [check ctx ty e] checks that expression [e] has type [ty] in context [ctx].
+    It raises [Type_error] if it does not. *)
 let rec check ctx ty e =
   let ty' = type_of ctx e in
     if ty' <> ty then
