@@ -33,6 +33,11 @@ let check_vtype ty =
   if not (is_vtype ty) 
   then type_error (string_of_type ty ^ " is not a value type")
 
+let check_cons c = 
+  if not (Hashtbl.mem consTable c)
+  then type_error ("unknown constructor " ^ c) ; 
+  Hashtbl.find consTable c
+
 (** [unfold_lolli collected ty] is a tail recursive function that exposes
     all the right-nested implications in the type ty to get at the head type *)
 let rec unfold_lolli collected = function
@@ -63,33 +68,27 @@ let rec chk_data (to_add: vtype list MapS.t MapS.t) = function
       if Hashtbl.mem dataTable a
       then type_error ("type " ^ a ^ " cannot be extended") ;
     (* Either extend an existing type map or add a new one *)
-      if MapS.mem a to_add 
+      if not (MapS.mem a to_add)
       then chk_data (MapS.add a (MapS.singleton c tys) to_add) data
       else chk_data 
         (MapS.add a (MapS.add c tys (MapS.find a to_add)) to_add) data
 
 (** [check_data data] checkes the well-formedness of the data declarations 
     [data] and loads information into the global tables *)
-let check_data = 
-  let initial_data =  
-    MapS.singleton "bool" 
-      (MapS.add "true" []
-        (MapS.add "false" []
-          MapS.empty)) in
-  chk_data initial_data
+let check_data = chk_data MapS.empty
+let () = check_data [ ("true", VConst "bool") ; ("false", VConst "bool") ]
 
 (** [pat_ty ty pat] checks that the pattern [pat] is a valid pattern of type
     [ty] and generates the extended context produced by that pattern. *)
 let pat_ty ty = function
   | Var x -> [ (x, ty) ]
-  | Const ("true", []) -> 
-      if ty = VConst "bool" then [] else 
+  | Const (c, []) -> 
+      let (tys, a) = check_cons c in
+      if List.length tys <> 0 
+      then type_error ("haven't learned about interesting patterns yet") ;
+      if ty = VConst a then [] else 
         type_error 
-          ("constant true not a constructor of type " ^ string_of_type ty) 
-  | Const ("false", []) -> 
-      if ty = VConst "bool" then [] else 
-        type_error 
-          ("constant true not a constructor of type " ^ string_of_type ty) 
+          ("constant " ^ c ^ " not a constructor of type " ^ string_of_type ty) 
   | Int _ ->
       if ty = VInt then [] else 
         type_error 
@@ -130,9 +129,17 @@ and type_of ctx = function
        with
 	   Not_found -> type_error ("unknown identifier " ^ x))
   | Int _ -> VInt
-  | Const ("true", []) -> VConst "bool"
-  | Const ("false", []) -> VConst "bool"
-  | Const (c, _) -> type_error ("unknown constructor " ^ c)
+  | Const (c, vs) -> 
+      if not (Hashtbl.mem consTable c)
+      then type_error ("unknown constructor " ^ c) ; 
+      let (tys, a) = Hashtbl.find consTable c in
+      if List.length vs <> List.length tys 
+      then type_error ("constructor " ^ c ^ " expects " ^ 
+                       string_of_int (List.length tys) ^ " arg(s), given " ^
+                       string_of_int (List.length vs)) ;
+      ignore (List.map2 (check ctx) tys vs) ;
+      VConst a
+
   | Times (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VInt
   | Plus (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VInt
   | Minus (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VInt
