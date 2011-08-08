@@ -26,6 +26,7 @@
 %token QUIT
 %token USE
 %token <string>STRING
+%token COMMA
 %token EOF
 %token MATCH WITH PIPE END
 
@@ -89,13 +90,13 @@ app:
   | FORCE non_app                { Force $2 }
   | RETURN non_app               { Return $2 }
   | THUNK non_app                { Thunk $2 }
-  | app non_app                  { Apply ($1, $2) }
+  | app non_app                  { cApply ($1, $2) }
  
 non_app:
   | VAR                          { Var $1 }
-  | UVAR                         { Const $1 }
-  | TRUE                         { Const "true" }
-  | FALSE                        { Const "false" }
+  | UVAR                         { Const ($1, []) }
+  | TRUE                         { Const ("true", []) }
+  | FALSE                        { Const ("false", []) }
   | INT                          { Int $1 }
   | LPAREN expr RPAREN           { $2 }    
 
@@ -111,7 +112,7 @@ boolean:
 
 ty:
   | TINT         	     { VInt }
-  | TBOOL	 	     { VConst ([], "bool") }
+  | TBOOL	 	     { VConst "bool" }
   | ty ARROW ty              { CArrow ($1, $3) }
   | TFORGET ty               { VForget $2 }
   | TFREE ty                 { CFree $2 }

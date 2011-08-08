@@ -6,25 +6,33 @@ type environment = (name * runtime) list
 
 and runtime =
   | VInt of int
-  | VConst of name 
+  | VStruct of allocated ref
   | VThunk of environment * expr
   | VFun of environment * name * expr
   | VReturn of runtime
+
+and allocated = name * runtime list
+
+let vtrue = VStruct (ref ("true", []))
+let vfalse = VStruct (ref ("false", []))
 
 exception Runtime_error of string
 
 let runtime_error msg = raise (Runtime_error ("Runtime error: " ^ msg))
 
-let rec string_of_runtime = function
+let rec string_of_runtime: runtime -> string = function
   | VInt k -> string_of_int k
-  | VConst a -> a
+  | VStruct r -> 
+      let (x, vs) = !r in
+        if List.length vs = 0 then x else         
+        "(" ^ x ^ " " ^ String.concat " " (List.map string_of_runtime vs) ^ ")"
   | VThunk _ -> "<thunk>"
   | VFun _ -> "<fun>"
   | VReturn v -> "return " ^ string_of_runtime v
 
 let mkbool = function
-  | true -> VConst "true"
-  | false -> VConst "false"
+  | true -> vtrue
+  | false -> vfalse
 
 let rec filter f = function
   | [] -> None
@@ -34,15 +42,16 @@ let rec filter f = function
      | Some y -> Some y)
 
 let rec matchpat v = function
-  | (Const c, e) -> 
+  | (Const (c, []), e) -> 
       (match v with 
-         | VConst c' -> if c = c' then Some ([], e) else None
+         | VStruct r -> if c = fst (!r) then Some ([], e) else None
          | _ -> runtime_error "type error in match?")
   | (Int i, e) -> 
       (match v with
          | VInt i' -> if i = i' then Some ([], e) else None
          | _ -> runtime_error "type error in match?")
   | (Var x, e) -> Some ([ (x, v) ], e)
+  | (Const (_, _), _) -> runtime_error "no mathing against deep patterns yet"
   | _ -> runtime_error "bad pattern"
 
 let rec interp env = function
@@ -52,7 +61,7 @@ let rec interp env = function
        with
 	   Not_found -> runtime_error ("Unknown variable " ^ x))
   | Int k -> VInt k
-  | Const c -> VConst c
+  | Const (c, vs) -> VStruct (ref (c, List.map (interp env) vs))
   | Thunk e -> VThunk (env, e)
   | Fun (x, _, e) -> VFun (env, x, e)
   | Times (e1, e2) ->

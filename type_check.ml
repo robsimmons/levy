@@ -35,12 +35,12 @@ let check_vtype ty =
     [ty] and generates the extended context produced by that pattern. *)
 let pat_ty ty = function
   | Var x -> [ (x, ty) ]
-  | Const "true" -> 
-      if ty = VConst ([], "bool") then [] else 
+  | Const ("true", []) -> 
+      if ty = VConst "bool" then [] else 
         type_error 
           ("constant true not a constructor of type " ^ string_of_type ty) 
-  | Const "false" -> 
-      if ty = VConst ([], "bool") then [] else 
+  | Const ("false", []) -> 
+      if ty = VConst "bool" then [] else 
         type_error 
           ("constant true not a constructor of type " ^ string_of_type ty) 
   | Int _ ->
@@ -83,16 +83,16 @@ and type_of ctx = function
        with
 	   Not_found -> type_error ("unknown identifier " ^ x))
   | Int _ -> VInt
-  | Const "true" -> VConst ([], "bool")
-  | Const "false" -> VConst ([], "bool")
-  | Const c -> type_error ("unknown constructor " ^ c)
+  | Const ("true", []) -> VConst "bool"
+  | Const ("false", []) -> VConst "bool"
+  | Const (c, _) -> type_error ("unknown constructor " ^ c)
   | Times (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VInt
   | Plus (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VInt
   | Minus (e1, e2) -> check ctx VInt e1 ; check ctx VInt e2 ; VInt
   | Equal (e1, e2) -> 
-      check ctx VInt e1 ; check ctx VInt e2 ; VConst ([], "bool")
+      check ctx VInt e1 ; check ctx VInt e2 ; VConst "bool"
   | Less (e1, e2) -> 
-      check ctx VInt e1 ; check ctx VInt e2 ; VConst ([], "bool")
+      check ctx VInt e1 ; check ctx VInt e2 ; VConst "bool"
   | Case (e, cases) ->
       let ty = type_of ctx e in
         type_of_cases ctx ty cases None

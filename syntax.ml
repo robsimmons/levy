@@ -7,7 +7,7 @@ type name = string
     it is convenient to have a single datatype for all of them. *)
 type ltype =
   | VInt                        (** integer [int] *)
-  | VConst of vtype list * name (** defined inductive types *)
+  | VConst of name              (** defined inductive types *)
   | VForget of ctype            (** thunked type [U t] *)
   | CFree of vtype              (** free type [F s] *)
   | CArrow of vtype * ctype     (** Function type [s -> t] *)
@@ -26,7 +26,7 @@ and pattern = expr
 
 and expr =
   | Var of name            	  (** variable *)
-  | Const of name            	  (** defined constant *)
+  | Const of name * value list    (** defined constant *)
   | Int of int             	  (** integer constant *)
   | Times of value * value 	  (** product [v1 * v2] *)
   | Plus of value * value  	  (** sum [v1 + v2] *)
@@ -44,8 +44,14 @@ and expr =
 
 and matches = (pattern * expr) list
 
-let cLet (x, v, e) = Case (v, [ (Var x, e) ])
-let cIf (v, et, ef) = Case (v, [ (Const "true", et); (Const "false", ef) ])
+let cLet (x, v, e) = 
+  Case (v, [ (Var x, e) ])
+let cIf (v, et, ef) = 
+  Case (v, [ (Const ("true", []), et); (Const ("false", []), ef) ])
+let cApply (e, v) = 
+  match e with
+    | Const (x, vs) -> Const (x, vs @ [ v ])
+    | _ -> Apply (e, v)
 
 (** Toplevel commands *)
 type toplevel_cmd =
@@ -60,9 +66,7 @@ let string_of_type ty =
     let (m, str) =
       match ty with
 	| VInt -> (3, "int")
-	| VConst ([], a) -> (3, a)
-	| VConst (ty1 :: tys, a) -> 
-          (1, (to_str 1 ty1) ^ " -o " ^ (to_str 0 (VConst (tys, a))))
+	| VConst a -> (3, a)
 	| VForget ty -> (2, "U " ^ to_str 1 ty)
 	| CFree ty -> (2, "F " ^ to_str 1 ty)
 	| CArrow (ty1, ty2) -> (1, (to_str 1 ty1) ^ " -> " ^ (to_str 0 ty2))
@@ -79,7 +83,8 @@ let string_of_expr e =
       match e with
 	| Int n ->           (10, string_of_int n)
 	| Var x ->           (10, x)
-	| Const x ->         (10, x)
+	| Const (x, []) ->   (10, x)
+        | Const (x, vs) ->   ( 9, x ^ " " ^ String.concat " " (List.map (to_str 9) vs))
 	| Return e ->        ( 9, "return " ^ (to_str 9 e))
 	| Force e ->         ( 9, "force " ^ (to_str 9 e))
 	| Thunk e ->         ( 9, "thunk " ^ (to_str 9 e))
@@ -89,7 +94,7 @@ let string_of_expr e =
 	| Minus (e1, e2) ->  ( 7, (to_str 6 e1) ^ " - " ^ (to_str 7 e2))
 	| Equal (e1, e2) ->  ( 5, (to_str 5 e1) ^ " = " ^ (to_str 5 e2))
 	| Less (e1, e2) ->   ( 5, (to_str 5 e1) ^ " < " ^ (to_str 5 e2))
-        | Case (e, cases) ->( 4, "match " ^ (to_str 4 e) ^ " with " ^ (to_str_cases cases))
+        | Case (e, cases) -> ( 4, "match " ^ (to_str 4 e) ^ " with " ^ (to_str_cases cases))
 	| Fun (x, ty, e) ->  ( 2, "fun " ^ x ^ " : " ^ (string_of_type ty) ^ " -> " ^ (to_str 0 e))
 	| Rec (x, ty, e) ->  ( 2, "rec " ^ x ^ " : " ^ (string_of_type ty) ^ " is " ^ (to_str 0 e))
 	| To (e1, x, e2) ->  ( 1, to_str 1 e1 ^ " to " ^ x ^ " . " ^ to_str 0 e2)
@@ -102,7 +107,8 @@ let string_of_expr e =
     of variables [x1], ..., [xn] with expressions [e1], ..., [en]. *)
 let rec subst s = function
   | (Var x) as e -> (try List.assoc x s with Not_found -> e)
-  | (Int _ | Const _) as e -> e
+  | (Int _) as e -> e
+  | Const (x, vs) -> Const (x, List.map (subst s) vs)
   | Times (e1, e2) -> Times (subst s e1, subst s e2)
   | Plus (e1, e2) -> Plus (subst s e1, subst s e2)
   | Minus (e1, e2) -> Minus (subst s e1, subst s e2)
