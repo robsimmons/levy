@@ -22,9 +22,11 @@ rule token = parse
   | 'U'             { TFORGET }
   | 'F'             { TFREE }
   | "->"            { ARROW }
+  | "-o"            { LOLLI }
   | "bool"          { TBOOL }
   | "int"           { TINT }
 
+  | "data"          { DATA }
   | "else"          { ELSE }
   | "false"         { FALSE }
   | "force"         { FORCE }

@@ -28,6 +28,7 @@
 %token <string>STRING
 %token COMMA
 %token EOF
+%token DATA LOLLI
 %token MATCH WITH PIPE END
 
 %start toplevel
@@ -36,9 +37,11 @@
 %right PIPE
 %nonassoc TO 
 %nonassoc LET IN
-%nonassoc FUN ARROW REC IS
+%right ARROW 
+%nonassoc FUN REC IS
 %nonassoc IF THEN ELSE
-%nonassoc EQUAL LESS
+%nonassoc EQUAL LESS 
+%right LOLLI
 %left PLUS MINUS
 %left TIMES
 %right TFREE TFORGET

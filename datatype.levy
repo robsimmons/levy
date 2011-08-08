@@ -1,0 +1,58 @@
+# The simplest use of data is to define enumerations. The following declaration
+# defines `Red`, `Blue`, `Yellow`, and `Green` as constructors of type `color`.
+
+data Red: color
+   | Blue: color
+   | Yellow: color
+   | Green: color
+
+# The uppercase-is-for-constructors, lowercase-is-for-type-and-variables 
+# distinction enforced by OCaml is used in Levy. Booleans are a special case:
+# it is completely consistent to think of Boolean values as being defined by
+# this enumeration, even though `true` and `false` are lowercase, not 
+# uppercase.
+
+# data true: bool
+#    | false: bool
+
+
+
+# Sums and products are (awkwardly) introduced into Levy by the datatype 
+# mechanism; polymorphism would make this much less awkward. Here we see an 
+# encoding of `int + bool` and `int * bool`. 
+
+data Inl: int -o intorbool
+   | Inr: bool -o intorbool
+
+let v1 = Inl 4
+let v2 = Inr false
+
+data Pair: int -o bool -o intandbool
+
+let v3 = Pair 12 true
+
+
+
+# Datatype declarations are most useful for their introduciton of inductive
+# datatypes, like lists of integers or trees containing integers. 
+
+data Nil: list
+   | Cons: int -o list -o list
+
+data Emp: tree
+   | Node: tree -o int -o tree -o tree
+
+
+
+# The syntax we have chosen lets us define mutual recursive datatypes in a
+# simple way, as we can see from the following definition of even/odd unary
+# natural numbers. A lack of mutually recursive functions in Levy means that
+# this isn't terribly useful.
+
+data Z: even
+   | EO: even -o odd
+   | OE: odd -o even
+
+# At the end of a datatype declaration the type is closed; it would be an error
+# to have a subsequent declaration like `data One: even`
+
