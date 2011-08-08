@@ -42,7 +42,11 @@ let rec exec_cmd n (ctx, env) = function
 	print_endline ("val " ^ x ^ " : " ^ string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;
 	((x,ty)::ctx, (x,v)::env)
   | Quit -> raise End_of_file
-  | Data data -> (Type_check.check_data data ; (ctx, env))
+  | Data data ->
+      Type_check.check_data data ;
+      print_endline ("data " ^ String.concat "\n   | " 
+        (List.map (fun (c, ty) -> c ^ ": " ^ string_of_type ty) data)) ;
+      (ctx, env)
   | Use fn -> exec_file n (ctx, env) fn
 
 (** [exec_file (ctx, env) n fn] executes the contents of file [fn] in

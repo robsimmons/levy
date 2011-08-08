@@ -13,9 +13,6 @@ and runtime =
 
 and allocated = name * runtime list
 
-let vtrue = VStruct (ref ("true", []))
-let vfalse = VStruct (ref ("false", []))
-
 exception Runtime_error of string
 
 let runtime_error msg = raise (Runtime_error ("Runtime error: " ^ msg))
@@ -30,9 +27,12 @@ let rec string_of_runtime: runtime -> string = function
   | VFun _ -> "<fun>"
   | VReturn v -> "return " ^ string_of_runtime v
 
-let mkbool = function
-  | true -> vtrue
-  | false -> vfalse
+let mkbool = 
+  let vtrue = VStruct (ref ("true", [])) in
+  let vfalse = VStruct (ref ("false", [])) in
+  function
+    | true -> vtrue
+    | false -> vfalse
 
 let rec filter f = function
   | [] -> None

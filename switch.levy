@@ -54,3 +54,12 @@ let colorcode = thunk (fun x: color ->
 
 (force colorcode) Red ;;
 (force colorcode) Green ;; 
+
+# The uppercase-is-for-constructors, lowercase-is-for-type-and-variables 
+# distinction enforced by OCaml is used in Levy. Booleans are a special case:
+# it is completely consistent to think of Boolean values as being defined by
+# this enumeration, even though `true` and `false` are lowercase, not 
+# uppercase.
+
+# data true: bool
+#    | false: bool

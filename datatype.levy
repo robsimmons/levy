@@ -1,39 +1,16 @@
-# The simplest use of data is to define enumerations. The following declaration
-# defines `Red`, `Blue`, `Yellow`, and `Green` as constructors of type `color`.
-
-data Red: color
-   | Blue: color
-   | Yellow: color
-   | Green: color ;;
-
-let v0 = Red
-let v1 = thunk (match v0 with  
-     
-
-# The uppercase-is-for-constructors, lowercase-is-for-type-and-variables 
-# distinction enforced by OCaml is used in Levy. Booleans are a special case:
-# it is completely consistent to think of Boolean values as being defined by
-# this enumeration, even though `true` and `false` are lowercase, not 
-# uppercase.
-
-# data true: bool
-#    | false: bool
-
-
-
 # Sums and products are (awkwardly) introduced into Levy by the datatype 
 # mechanism; polymorphism would make this much less awkward. Here we see an 
 # encoding of `int + bool` and `int * bool`. 
 
 data Inl: int -o intorbool
-   | Inr: bool -o intorbool
+   | Inr: bool -o intorbool ;;
 
-let v1 = Inl 4
-let v2 = Inr false
+let v1 = Inl 4 ;;
+let v2 = Inr false ;;
 
-data Pair: int -o bool -o intandbool
+data Pair: int -o bool -o intandbool ;;
 
-let v3 = Pair 12 true
+let v3 = Pair 12 true ;;
 
 
 
@@ -41,21 +18,29 @@ let v3 = Pair 12 true
 # datatypes, like lists of integers or trees containing integers. 
 
 data Nil: list
-   | Cons: int -o list -o list
+   | Cons: int -o list -o list ;;
 
 data Emp: tree
-   | Node: tree -o int -o tree -o tree
+   | Node: tree -o int -o tree -o tree ;;
 
-
+let v4 = Node (Node Emp 3 Emp) 5 (Node Emp 7 (Node Emp 9 Emp)) ;;
+let nil = thunk (fun x: list -> 
+  match x with 
+    | Nil -> return true
+    | y -> return false) ;;
+(force nil) Nil ;;
+(force nil) (Cons 4 Nil) ;;
 
 # The syntax we have chosen lets us define mutual recursive datatypes in a
 # simple way, as we can see from the following definition of even/odd unary
 # natural numbers. A lack of mutually recursive functions in Levy means that
-# this isn't terribly useful.
+# this isn't terribly useful, but there you go.
 
 data Z: even
    | EO: even -o odd
-   | OE: odd -o even
+   | OE: odd -o even ;;
+
+let four = OE (EO (OE (EO Z))) ;;
 
 # At the end of a datatype declaration the type is closed; it would be an error
 # to have a subsequent declaration like `data One: even`
