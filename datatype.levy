@@ -4,7 +4,11 @@
 data Red: color
    | Blue: color
    | Yellow: color
-   | Green: color
+   | Green: color ;;
+
+let v0 = Red
+let v1 = thunk (match v0 with  
+     
 
 # The uppercase-is-for-constructors, lowercase-is-for-type-and-variables 
 # distinction enforced by OCaml is used in Levy. Booleans are a special case:
