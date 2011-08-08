@@ -41,19 +41,6 @@ let rec filter f = function
      | None -> filter f xs
      | Some y -> Some y)
 
-let rec matchpat v = function
-  | (Const (c, []), e) -> 
-      (match v with 
-         | VStruct r -> if c = fst (!r) then Some ([], e) else None
-         | _ -> runtime_error "type error in match?")
-  | (Int i, e) -> 
-      (match v with
-         | VInt i' -> if i = i' then Some ([], e) else None
-         | _ -> runtime_error "type error in match?")
-  | (Var x, e) -> Some ([ (x, v) ], e)
-  | (Const (_, _), _) -> runtime_error "no mathing against deep patterns yet"
-  | _ -> runtime_error "bad pattern"
-
 let rec interp env = function
   | Var x ->
       (try
@@ -85,9 +72,10 @@ let rec interp env = function
 	 | VInt k1, VInt k2 -> mkbool (k1 < k2)
 	 | _ -> runtime_error "Integers expected in <")
   | Case (e, pats) -> 
-      (match filter (matchpat (interp env e)) pats with
-         | None -> runtime_error "Match failure"
-         | Some (subst, e') -> interp (subst @ env) e')
+      (match (interp env e) with 
+         | VInt i -> match_int env i pats
+         | VStruct r -> match_struct env (!r) pats
+         | v -> match_whatever env v pats)
   | Apply (e1, e2) ->
       (match interp env e1, interp env e2 with
 	 | VFun (env, x, e), v2 -> interp ((x,v2)::env) e
@@ -102,3 +90,25 @@ let rec interp env = function
 	 | VThunk (env, e) -> interp env e
 	 | _ -> runtime_error "Thunk expected in force")
   | Rec (x, _, e') as e -> interp ((x, VThunk (env, e)) :: env) e'
+
+and match_failure = function
+  | [] -> runtime_error "Match failure"
+  | _ -> runtime_error "Bad pattern"
+
+and match_int env i = function
+  | (Var x, e) :: _ -> interp ((x, VInt i) :: env) e
+  | (Int j, e) :: pats -> 
+      if i = j then interp env e else match_int env i pats
+  | pats -> match_failure pats
+
+and match_struct env (c, vs) = function
+  | (Var x, e) :: _ -> interp ((x, VStruct (ref (c, vs))) :: env) e
+  | (Const (c', []), e) :: pats ->
+      if c = c' then interp env e else match_struct env (c, vs) pats
+  | pats -> match_failure pats
+
+and match_whatever env v = function
+  | (Var x, e) :: _ -> interp ((x, v) :: env) e
+  | pats -> match_failure pats
+
+
