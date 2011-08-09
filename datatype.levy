@@ -23,7 +23,8 @@ data Nil: list
 data Emp: tree
    | Node: tree -o int -o tree -o tree ;;
 
-let v4 = Node (Node Emp 3 Emp) 5 (Node Emp 7 (Node Emp 9 Emp)) ;;
+let v4 = Cons 4 (Cons 6 (Cons 19 (Cons (-4) Nil)))
+let v5 = Node (Node Emp 3 Emp) 5 (Node Emp 7 (Node Emp 9 Emp)) ;;
 
 let nil = thunk fun x: list -> 
   match x with 
@@ -38,7 +39,19 @@ let sumlist = thunk rec sl : list -> F int is fun xs : list ->
     | Nil -> return 0
     | Cons x xs -> force sl xs to y in return x + y ;;
 
-force sumlist (Cons 4 (Cons 6 (Cons 19 (Cons (-4) Nil)))) ;;
+force sumlist v4 ;;
+
+let map = thunk fun f : U (int -> F int) -> 
+  rec mp : list -> F list is fun xs : list ->
+    match xs with
+      | Nil -> return Nil
+      | Cons x xs -> 
+          force f x to y in
+          force mp xs to ys in 
+          return Cons y ys ;;
+
+force map (thunk fun x : int -> return 0 - x) v4 ;;
+force map (thunk fun x : int -> return x * x) v4 ;; 
 
 # The syntax we have chosen lets us define mutual recursive datatypes in a
 # simple way, as we can see from the following definition of even/odd unary
