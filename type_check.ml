@@ -130,6 +130,7 @@ and type_of_cases ctx ty = function
 (** [type_of ctx e] computes the type of expression [e] in context [ctx].
     It raises [Type_error] if [e] does not have a type. *)
 and type_of ctx = function
+  | Var "_" -> type_error ("underscores cannot be used as identifiers")
   | Var x ->
       (try 
 	 List.assoc x ctx

@@ -30,6 +30,7 @@ let rec exec_cmd n (ctx, env) = function
   | Expr e ->
       (* type check [e], evaluate, and print result *)
       let ty = Type_check.type_of ctx e in
+      Coverage.coverage e ; 
       let v = Interpret.interp env e in
 	print_endline ((if Type_check.is_ctype ty then "comp " else "val ") ^
 			string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;
@@ -37,6 +38,7 @@ let rec exec_cmd n (ctx, env) = function
   | Def (x, e) ->
       (* type check [e], evaluate it and store *)
       let ty = Type_check.type_of ctx e in
+        Coverage.coverage e ;
 	Type_check.check_vtype ty ;
 	let v = Interpret.interp env e in
         print_endline ("val " ^ x ^ " : " ^ string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;
@@ -44,6 +46,7 @@ let rec exec_cmd n (ctx, env) = function
   | RunDef (x, e) -> 
       (* type check [e], compute it and store *)
       let ty = Type_check.return e (Type_check.type_of ctx e) in
+        Coverage.coverage e ;
         Type_check.check_vtype ty ;
         let v = Interpret.return (Interpret.interp env e) in
         print_endline ("val " ^ x ^ " : " ^ string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;

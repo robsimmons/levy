@@ -1,0 +1,52 @@
+# Coverage checking is used but only gives warnings, allowing for the 
+# possibility of runtime exceptions in programs with warnings.
+
+data Nil: list
+   | Cons: int -o list -o list ;;
+
+
+# The function returning the head of a list can be defined with an incomplete
+# pattern match.
+
+let hd = thunk fun xs : list ->
+  match xs with
+    | Cons x _ -> return x ;;
+
+force hd (Cons 9 Nil) ;; # This is fine
+# force hd Nil ;;        # This will cause a runtime exception
+
+
+# Parts of patterns can be ignored with underscores, but repeated variables in
+# a pattern will cause an error
+
+fun xs : list ->
+  match xs with
+    | Nil -> return true
+    | Cons _ _ -> return false ;;
+
+# Raises a type error:
+# fun xs : list -> match xs with | Cons x x -> return false ;;
+
+
+# Duplicate matches will also raise warnings
+
+fun xs : list -> 
+  match xs with
+    | ys -> return 0 
+    | Nil -> return 1 ;;
+
+fun xs : list -> 
+  match xs with
+    | Nil -> return 0 
+    | Cons x _ -> return x
+    | Cons _ _ -> return 2 ;;
+
+
+# Pattern matching is only allowed one level deep, so both of the following
+# will fail to typecheck.
+
+# Raises a type error:
+# fun xs : list -> match xs with | Cons 4 x -> return 0 | _ -> return 1 ;;
+# fun xs : list -> match xs with | Cons x Nil -> return 0 | _ -> return 1;;
+
+

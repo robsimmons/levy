@@ -13,7 +13,6 @@ data Pair: int -o bool -o intandbool ;;
 let v3 = Pair 12 true ;;
 
 
-
 # Datatype declarations are most useful for their introduciton of inductive
 # datatypes, like lists of integers or trees containing integers. 
 
@@ -52,6 +51,7 @@ let map = thunk fun f : U (int -> F int) ->
 
 force map (thunk fun x : int -> return 0 - x) v4 ;;
 force map (thunk fun x : int -> return x * x) v4 ;; 
+
 
 # The syntax we have chosen lets us define mutual recursive datatypes in a
 # simple way, as we can see from the following definition of even/odd unary
