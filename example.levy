@@ -91,4 +91,3 @@ let fact = thunk (rec f : int -> F int is fun n : int ->
 # Usage:
 
 (force fact) 7 ;; # (yes, we need to write "force fact" all the time)
-

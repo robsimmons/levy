@@ -34,13 +34,6 @@ let mkbool =
     | true -> vtrue
     | false -> vfalse
 
-let rec filter f = function
-  | [] -> None
-  | x :: xs -> 
-    (match f x with
-     | None -> filter f xs
-     | Some y -> Some y)
-
 let match_failure = function
   | [] -> runtime_error "Match failure"
   | _ -> runtime_error "Bad pattern"

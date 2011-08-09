@@ -2,11 +2,11 @@
 # mechanism; polymorphism would make this much less awkward. Here we see an 
 # encoding of `int + bool` and `int * bool`. 
 
-data Inl: int -o intorbool
-   | Inr: bool -o intorbool ;;
+data IAmAnInt: int -o intorbool
+   | IAmABool: bool -o intorbool ;;
 
-let v1 = Inl 4 ;;
-let v2 = Inr false ;;
+let v1 = IAmAnInt 4 ;;
+let v2 = IAmABool false ;;
 
 data Pair: int -o bool -o intandbool ;;
 
@@ -28,8 +28,9 @@ let nil = thunk (fun x: list ->
   match x with 
     | Nil -> return true
     | y -> return false) ;;
-(force nil) Nil ;;
-(force nil) (Cons 4 Nil) ;;
+
+force nil Nil ;;
+force nil (Cons 4 Nil) ;;
 
 # The syntax we have chosen lets us define mutual recursive datatypes in a
 # simple way, as we can see from the following definition of even/odd unary
