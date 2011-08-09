@@ -24,6 +24,10 @@ let check_ctype ty =
 let check_vtype ty =
   if not (is_vtype ty) then type_error (string_of_type ty ^ " is not a value type")
 
+let return e = function
+  | CFree ty -> ty
+  | ty -> type_error (string_of_expr e ^ " is used in sequencing but its type is " ^ string_of_type ty)
+
 (** [check ctx ty e] checks that expression [e] has type [ty] in context [ctx].
     It raises [Type_error] if it does not. *)
 let rec check ctx ty e =
@@ -64,14 +68,10 @@ and type_of ctx = function
 			 " is used as a function but its type is " ^
 			 string_of_type ty))
   | To (e1, x, e2) ->
-      (match type_of ctx e1 with
-	 | CFree ty1 ->
-	     check_vtype ty1 ;
-	     let ty2 = type_of ((x,ty1)::ctx) e2 in
-	       check_ctype ty2 ; ty2
-	 | ty -> type_error (string_of_expr e1 ^
-			    " is used in sequencing but its type is " ^
-			    string_of_type ty))
+      let ty1 = return e1 (type_of ctx e1) in
+	check_vtype ty1;
+        let ty2 = type_of ((x,ty1)::ctx) e2 in
+          check_ctype ty2 ; ty2
   | Let (x, e1, e2) ->
       let ty1 = type_of ctx e1 in
 	check_vtype ty1;

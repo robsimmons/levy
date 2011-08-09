@@ -1,0 +1,81 @@
+# Here is how we can actually globally define the factorial
+# function and use it.
+
+let fact = thunk (rec f : int -> F int is fun n : int ->
+                    if n = 0 then
+                      return 1
+                    else
+                      ((force f) (n - 1) to m in return (n * m))) ;;
+
+let f = thunk (fun n : int -> 
+                 (return (n + 7) to x in
+                  fun m : int -> return (x + m))) ;;
+
+# Usage:
+
+# We need to write "force fact" all the time
+(force fact) 7 ;; 
+(force f) 9 12 ;; 
+
+# However, we don't need to parenthesize "force fact" - "force" binds more
+# tightly than application, so we can syntactically treat force like it was an
+# "apply" function in a defunctionalized programming language.
+force fact 8 ;;
+force f 11 19 ;;
+
+
+# In both ML and Haskell, a function like "f" above that is curried can be
+# thought of as a function that, when given one argument, returns a value,
+# possibly after doing some computation. 
+
+# That's not the case in Levy: the only way we can make a value from a partial
+# application of f is to "thunk" it, which prevents any of the computation 
+# associated with the partial application from happening.
+
+force f 9 ;;                   # "return (n + 7)" will get computed here
+let f' = thunk (force f 9) ;;  # "return (n + 7)" will not get computed here
+# do f'' = force f 9           # Not type-correct: force f 9 not an F type
+force f' 12 ;;                 # "return (n + 7)" will get computed here
+
+
+# If we want partial application to generate computation, then that will have
+# to be explicit in the type: the type of f is U (int -> int -> F int), meaning
+# that no computation happens until both arguments are available, whereas
+# the type of g is U (int -> F U (int -> F int)), and (roughly speaking) 
+# computation can happen in two different places because there are two 
+# different Fs.
+
+let g = thunk (fun n : int -> 
+                 (return (n + 7) to x in
+                  return (thunk (fun m : int -> 
+                    return (x + m))))) ;;
+
+# Functions curried in this way are annoying in Levy, because we must 
+# explicitly sequence when computation happens.
+
+do g' = force g 5 ;;           # "return (n + 7)" will get computed here
+force g' 9 ;;                  # "return (n + 7)" already computed here
+
+
+# It is possible to coerce two-argument functions like f into 
+# function-returning functions like g and back; the "currying" transformation 
+# adds a useless thunk and the "uncurrying" function delays effects, which is 
+# exactly what currying and uncurrying achieves in ML.
+
+let curry = thunk (fun f : U (int -> int -> F int) -> 
+              return (thunk (fun n : int -> 
+                return (thunk (fun m : int -> 
+                  force f n m))))) ;;
+
+let uncurry = thunk (fun g : U (int -> F U (int -> F int)) -> 
+                return (thunk (fun n : int -> fun m : int ->
+                  (force g n to g' in force g' m)))) ;;
+
+do fc = force curry f ;;
+do gc = force uncurry g ;;
+
+force gc 9 12 ;;
+force fc 9 to fc' in force fc' 12 ;;
+
+
+

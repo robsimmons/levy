@@ -77,7 +77,9 @@ fun x : U F U F U F int -> (force x to y in force y to z in force z) ;;
 fun x : int -> return (thunk (return x)) ;; 
 fun x : int -> return (thunk (return (thunk (return x)))) ;; 
 
-# For convenience we have top-level definitions of values.
+# For convenience we have top-level definitions of values ("let x = e" instead
+# of "let x = e in ..." and top-level execution of computations ("do x = e" 
+# instead of "e to x in ..."): 
 
 let a = 5 ;;
 
@@ -85,16 +87,8 @@ let b = 10 + a ;;
 
 let c = thunk (return b) ;;
 
-# Here is how we can actually globally define the factorial
-# function and use it.
+do d = force c ;;
 
-let fact = thunk (rec f : int -> F int is fun n : int ->
-                    if n = 0 then
-                      return 1
-                    else
-                      ((force f) (n - 1) to m in return (n * m))) ;;
+do e = return (a + d) ;;
 
-# Usage:
-
-(force fact) 7 ;; # (yes, we need to write "force fact" all the time)
-
+do f = (fun x : int -> return (x + 2)) 19 ;;
