@@ -12,7 +12,7 @@ exception Type_error of string
 
 (** [type_error msg] raises exception [Type_error msg]. *)
 let type_error msg = raise (Type_error ("Type error: " ^ msg))
-
+ 
 let rec is_ctype = function
   | (VInt | VConst _ | VForget _) -> false
   | CFree ty -> is_vtype ty
