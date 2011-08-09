@@ -24,7 +24,13 @@ if 2 = 2 then return 1 else return 5 ;;
 
 fun n : int -> return (n + 3) ;;
 
-fun n : int -> if n < 0 then return (0 - n) else return n ;;
+# The parentheses around return statements aren't necessary, "return" and
+# "thunk" have lower precendence than everything except "to" and "let".
+
+fun n : int -> 
+  if n < 0
+  then return 0 - n 
+  else return n ;;
 
 # The syntax for fixpoint is like in MiniHaskell. The factorial function:
 

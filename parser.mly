@@ -32,6 +32,8 @@
 
 %nonassoc TO 
 %nonassoc LET IN
+%nonassoc RETURN 
+%nonassoc THUNK 
 %nonassoc FUN ARROW REC IS
 %nonassoc IF THEN ELSE
 %nonassoc EQUAL LESS
@@ -75,12 +77,12 @@ expr:
   | IF expr THEN expr ELSE expr	{ If ($2, $4, $6) }
   | FUN VAR COLON ty ARROW expr { Fun ($2, $4, $6) }
   | REC VAR COLON ty IS expr    { Rec ($2, $4, $6) }
+  | RETURN expr      { Return $2 }
+  | THUNK expr       { Thunk $2 }
   
 app:
   | non_app            { $1 }
   | FORCE non_app      { Force $2 }
-  | RETURN non_app     { Return $2 }
-  | THUNK non_app      { Thunk $2 }
   | app non_app        { Apply ($1, $2) }
 
 non_app:
