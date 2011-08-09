@@ -84,15 +84,19 @@ let () = check_data [ ("true", VConst "bool") ; ("false", VConst "bool") ]
 
 (** [pat_ty ty pat] checks that the pattern [pat] is a valid pattern of type
     [ty] and generates the extended context produced by that pattern. *)
-let pat_ty ty = function
+let rec pat_ty ty = function
   | Var x -> [ (x, ty) ]
-  | Const (c, []) -> 
+  | Const (c, pats) -> 
       let (tys, a) = check_cons c in
-      if List.length tys <> 0 
-      then type_error ("haven't learned about interesting patterns yet") ;
-      if ty = VConst a then [] else 
+      if List.length tys <> List.length pats
+      then 
         type_error 
-          ("constant " ^ c ^ " not a constructor of type " ^ string_of_type ty) 
+          ("constructor " ^ c ^ " expects " ^ string_of_int (List.length tys) ^
+           " argument(s), but was given " ^ string_of_int (List.length pats)) ;
+      if ty <> VConst a then
+        type_error 
+          ("constructor " ^ c ^ " not of type " ^ string_of_type ty) ;
+      List.concat (List.map2 pat_ty tys pats)
   | Int _ ->
       if ty = VInt then [] else 
         type_error 

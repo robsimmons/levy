@@ -41,6 +41,10 @@ let return = function
   | VReturn v -> v
   | _ -> runtime_error "Return expected in sequencing"
 
+let bindpat = function
+  | Var x -> fun v -> (x, v)
+  | _ -> runtime_error "Multiple-depth pattern matching"
+
 let rec interp env = function
   | Var x ->
       (try
@@ -97,8 +101,10 @@ and match_int env i = function
 
 and match_struct env (c, vs) = function
   | (Var x, e) :: _ -> interp ((x, VStruct (ref (c, vs))) :: env) e
-  | (Const (c', []), e) :: pats ->
-      if c = c' then interp env e else match_struct env (c, vs) pats
+  | (Const (c', vars), e) :: pats ->
+      if c = c' 
+      then interp (List.map2 bindpat vars vs @ env) e 
+      else match_struct env (c, vs) pats
   | pats -> match_failure pats
 
 and match_whatever env v = function
