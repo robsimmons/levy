@@ -6,19 +6,33 @@ type environment = (name * runtime) list
 
 and runtime =
   | VInt of int
-  | VStruct of allocated ref
+  | VStruct of pointer
   | VThunk of environment * expr
   | VFun of environment * name * expr
   | VReturn of runtime
+  | VZipper of zipper ref 
 
-and allocated = name * runtime list
+and pointer = allocated option ref
+
+and allocated = Struct of name * runtime list * (int * pointer) option
+
+and zipper = 
+  | Ident                                   (* [^x] ^x *)
+  | Zipper of allocated ref * allocated ref (* Pointer to first and last *)
+  | Invalid                                 (* Enforce affine usage *)
 
 exception Runtime_error of string
 
 let runtime_error msg = raise (Runtime_error ("Runtime error: " ^ msg))
 
-let vtrue = VStruct (ref ("true", []))
-let vfalse = VStruct (ref ("false", []))
+let cons c vs = ref (Some (Struct (c, vs, None))) (* Normal references *)
+let bang r = 
+  match !r with 
+    | None -> runtime_error "null pointer dereference"
+    | Some (Struct (c, vs, _)) -> (c, vs)
+
+let vtrue = VStruct (cons "true" [])
+let vfalse = VStruct (cons "false" [])
 let mkbool = function
   | true -> vtrue
   | false -> vfalse
@@ -30,12 +44,13 @@ let match_failure = function
 let rec string_of_runtime: runtime -> string = function
   | VInt k -> string_of_int k
   | VStruct r -> 
-      let (x, vs) = !r in
+      let (x, vs) = bang r in
         if List.length vs = 0 then x else         
         "(" ^ x ^ " " ^ String.concat " " (List.map string_of_runtime vs) ^ ")"
   | VThunk _ -> "<thunk>"
   | VFun _ -> "<fun>"
   | VReturn v -> "return " ^ string_of_runtime v
+  | VZipper _ -> "<zipper>"
 
 let return = function
   | VReturn v -> v
@@ -52,7 +67,7 @@ let rec interp env = function
        with
 	   Not_found -> runtime_error ("Unknown variable " ^ x))
   | Int k -> VInt k
-  | Const (c, vs) -> VStruct (ref (c, List.map (interp env) vs))
+  | Const (c, vs) -> VStruct (cons c (List.map (interp env) vs))
   | Thunk e -> VThunk (env, e)
   | Fun (x, _, e) -> VFun (env, x, e)
   | Times (e1, e2) ->
@@ -78,7 +93,7 @@ let rec interp env = function
   | Case (e, pats) -> 
       (match (interp env e) with 
          | VInt i -> match_int env i pats
-         | VStruct r -> match_struct env (!r) pats
+         | VStruct r -> match_struct env (bang r) pats
          | v -> match_whatever env v pats)
   | Apply (e1, e2) ->
       (match interp env e1, interp env e2 with
@@ -100,7 +115,7 @@ and match_int env i = function
   | pats -> match_failure pats
 
 and match_struct env (c, vs) = function
-  | (Var x, e) :: _ -> interp ((x, VStruct (ref (c, vs))) :: env) e
+  | (Var x, e) :: _ -> interp ((x, VStruct (cons c vs)) :: env) e
   | (Const (c', vars), e) :: pats ->
       if c = c' 
       then interp (List.map2 bindpat vars vs @ env) e 
