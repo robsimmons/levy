@@ -32,7 +32,8 @@
 
 %nonassoc TO 
 %nonassoc LET IN
-%nonassoc FUN ARROW REC IS
+%right ARROW
+%nonassoc FUN REC IS
 %nonassoc IF THEN ELSE
 %nonassoc EQUAL LESS
 %left PLUS MINUS
@@ -73,7 +74,7 @@ expr:
   | LET VAR EQUAL expr IN expr  { Let ($2, $4, $6) }
   | expr TO VAR IN expr         { To ($1, $3, $5) }
   | IF expr THEN expr ELSE expr	{ If ($2, $4, $6) }
-  | FUN VAR COLON ty ARROW expr { Fun ($2, $4, $6) }
+  | FUN VAR COLON ty ARROW expr %prec FUN { Fun ($2, $4, $6) }
   | REC VAR COLON ty IS expr    { Rec ($2, $4, $6) }
   
 app:
