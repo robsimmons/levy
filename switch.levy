@@ -30,10 +30,10 @@ let f = thunk (fun x: int ->
     | 5 -> return 0
     | y -> return (x + y)) ;;
 
-(force f) 1 ;;
-(force f) 3 ;;
-(force f) 5 ;;
-(force f) 7 ;;
+force f 1 ;;
+force f 3 ;;
+force f 5 ;;
+force f 7 ;;
 
 # We can also use datatype declarations to define enumerations. The following 
 # declaration defines `Red`, `Blue`, `Yellow`, and `Green` as constructors of 

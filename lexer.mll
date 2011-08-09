@@ -10,9 +10,8 @@
     }
 }
 
-let uvar = ['A'-'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
-let lvar = ['_' 'a'-'z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9']*
-let var = ['_' 'a'-'z' 'A'-'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9' '\'']*
+let uvar = ['A'-'Z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9' '\'']*
+let lvar = ['_' 'a'-'z'] ['_' 'a'-'z' 'A'-'Z' '0'-'9' '\'']*
 
 rule token = parse
   | '#' [^'\n']* '\n' { incr_linenum lexbuf; token lexbuf }
@@ -27,6 +26,7 @@ rule token = parse
   | "bool"          { TBOOL }
   | "int"           { TINT }
 
+  | "data"          { DATA }
   | "do"            { DO }
   | "else"          { ELSE }
   | "false"         { FALSE }

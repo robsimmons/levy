@@ -7,7 +7,6 @@ type environment = (name * runtime) list
 and runtime =
   | VInt of int
   | VStruct of allocated ref
-  | VBool of bool
   | VThunk of environment * expr
   | VFun of environment * name * expr
   | VReturn of runtime
@@ -17,6 +16,16 @@ and allocated = name * runtime list
 exception Runtime_error of string
 
 let runtime_error msg = raise (Runtime_error ("Runtime error: " ^ msg))
+
+let vtrue = VStruct (ref ("true", []))
+let vfalse = VStruct (ref ("false", []))
+let mkbool = function
+  | true -> vtrue
+  | false -> vfalse
+
+let match_failure = function
+  | [] -> runtime_error "Match failure"
+  | _ -> runtime_error "Bad pattern"
 
 let rec string_of_runtime: runtime -> string = function
   | VInt k -> string_of_int k
@@ -71,8 +80,6 @@ let rec interp env = function
       (match interp env e1, interp env e2 with
 	 | VFun (env, x, e), v2 -> interp ((x,v2)::env) e
 	 | _, _ -> runtime_error "Function expected in application")
-  | Let (x, e1, e2) ->
-      let v = interp env e1 in interp ((x,v)::env) e2
   | To (e1, x, e2) -> 
       let v = return (interp env e1) in interp ((x,v)::env) e2
   | Return e -> VReturn (interp env e)

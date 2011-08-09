@@ -37,6 +37,68 @@ let return e = function
   | CFree ty -> ty
   | ty -> type_error (string_of_expr e ^ " is used in sequencing but its type is " ^ string_of_type ty)
 
+let check_cons c = 
+  if not (Hashtbl.mem consTable c)
+  then type_error ("unknown constructor " ^ c) ; 
+  Hashtbl.find consTable c
+
+(** [unfold_lolli collected ty] is a tail recursive function that exposes
+    all the right-nested implications in the type ty to get at the head type *)
+let rec unfold_lolli collected = function
+  | VConst a -> (List.rev collected, a)
+  | VLolli (ty1, ty2) -> check_vtype ty1 ; unfold_lolli (ty1 :: collected) ty2
+  | ty -> type_error (string_of_type ty ^ " is not a valid constructed type")
+
+(** [chk_data to_add data] is a tail recursive function that collects data
+    in the map [to_add]  *)
+let rec chk_data (to_add: vtype list MapS.t MapS.t) = function
+  | [] -> 
+    (* All cases covered, add them to the persistant store *)
+      ignore (MapS.mapi (function a -> function constructors -> 
+        Hashtbl.add dataTable a constructors ;
+        ignore (MapS.mapi (function c -> function tys -> 
+          Hashtbl.add consTable c (tys, a)) constructors)) to_add) 
+  
+  | (c, ty) :: data -> 
+    (* Check for duplicate constructor declarations *)
+      if Hashtbl.mem consTable c 
+      then type_error ("constructor " ^ c ^ " already declared") ;
+      if MapS.exists (function _ -> function constructors ->
+           MapS.exists (function c' -> function _ -> c = c') constructors)
+           to_add
+      then type_error ("constructor " ^ c ^ " duplicated in this declaration") ;
+      let (tys, a) = unfold_lolli [] ty in 
+    (* Check that we're not extending previous datatype declarations *)
+      if Hashtbl.mem dataTable a
+      then type_error ("type " ^ a ^ " cannot be extended") ;
+    (* Either extend an existing type map or add a new one *)
+      if not (MapS.mem a to_add)
+      then chk_data (MapS.add a (MapS.singleton c tys) to_add) data
+      else chk_data 
+        (MapS.add a (MapS.add c tys (MapS.find a to_add)) to_add) data
+
+(** [check_data data] checkes the well-formedness of the data declarations 
+    [data] and loads information into the global tables *)
+let check_data = chk_data MapS.empty
+let () = check_data [ ("true", VConst "bool") ; ("false", VConst "bool") ]
+
+(** [pat_ty ty pat] checks that the pattern [pat] is a valid pattern of type
+    [ty] and generates the extended context produced by that pattern. *)
+let pat_ty ty = function
+  | Var x -> [ (x, ty) ]
+  | Const (c, []) -> 
+      let (tys, a) = check_cons c in
+      if List.length tys <> 0 
+      then type_error ("haven't learned about interesting patterns yet") ;
+      if ty = VConst a then [] else 
+        type_error 
+          ("constant " ^ c ^ " not a constructor of type " ^ string_of_type ty) 
+  | Int _ ->
+      if ty = VInt then [] else 
+        type_error 
+          ("integer constant not is not of type " ^ string_of_type ty)
+  | pat -> type_error (string_of_expr pat ^ " not a valid pattern")
+
 (** [check ctx ty e] checks that expression [e] has type [ty] in context [ctx].
     It raises [Type_error] if it does not. *)
 let rec check ctx ty e =
@@ -107,11 +169,6 @@ and type_of ctx = function
 	check_vtype ty1;
         let ty2 = type_of ((x,ty1)::ctx) e2 in
           check_ctype ty2 ; ty2
-  | Let (x, e1, e2) ->
-      let ty1 = type_of ctx e1 in
-	check_vtype ty1;
-	let ty2 = type_of ((x,ty1)::ctx) e2 in
-	  check_ctype ty2 ; ty2
   | Return e ->
       let ty = type_of ctx e in
 	check_vtype ty ; CFree ty

@@ -8,35 +8,48 @@
     | Cases of (expr * expr) list  (* Syntax known to be a case expression *)
     | Arrowey of (syntax * syntax) (* Arrows are particularly ambiguous *)
 
-  exception Parse_error of string
+  exception Syntax_error of string
+
+  (** [syntax_error msg] raises exception [Syntax_error msg]. *)
+  let syntax_error msg = raise (Syntax_error ("Parse error: " ^ msg))
 
   (* Force syntax to be a type *)
   let rec mkTy = function
     | UnkVar x -> VConst x
     | Ty ty -> ty
-    | Ex _ -> raise (Parse_error "expression found where type was required")
-    | Cases _ -> raise (Parse_error "badly formed type?")
     | Arrowey (x, y) -> CArrow (mkTy x, mkTy y)
+    | Ex e -> 
+      syntax_error ("badly formed type " ^ string_of_expr e ^ 
+                   " parsed as an expression")
+    | Cases _ -> syntax_error ("badly formed type includes a pipe symbol")
 
   (* Force syntax to be an expression *)
   let mkEx = function
     | UnkVar x -> Var x
-    | Ty _ -> raise (Parse_error "type found where expression was required")
     | Ex expr -> expr
-    | Cases _ -> raise (Parse_error "cases found without match expression")
-    | Arrowey (x, y) -> raise (Parse_error "'->' is not a valid expression")
+    | Ty x -> syntax_error ("badly formed expression " ^ string_of_type x ^
+                           " parsed as a type")
+    | Cases _ -> syntax_error ("badly formed expression includes pipe")
+    | Arrowey (x, y) -> 
+      syntax_error ("badly formed expression includes pipe/arrow")
 
   (* Force syntax to be a case statement *)
   let mkCases = function
     | Cases x -> x
     | Arrowey (x, y) -> [ (mkEx x, mkEx y) ]
-    | _ -> raise (Parse_error "poorly formed case statements")
+    | _ -> syntax_error "poorly formed case statements"
 
   (* Force syntax to be a (ty -> e) expression *)
   let mkFn = function
     | Arrowey (x, y) -> (mkTy x, mkEx y)
-    | _ -> raise (Parse_error "bad function body")
-
+    | Ex e -> syntax_error ("function body (form 'type -> expression') " ^ 
+                           " parsed as expression " ^ string_of_expr e)
+    | Ty ty -> syntax_error ("function body (form 'type -> expression') " ^ 
+                            " parsed as type " ^ string_of_type ty)
+    | Cases _ -> syntax_error ("function body (form 'type -> expression') " ^ 
+                              " includes pipe")
+    | UnkVar x -> syntax_error ("function body (form 'type -> expression') " ^ 
+                               " parsed as single variable " ^ x)
 %}
 
 %token TINT
@@ -73,20 +86,16 @@
 %type <Syntax.toplevel_cmd list> toplevel
 
 %right PIPE
-
-%nonassoc TO 
-%nonassoc LET IN
-%nonassoc FUN REC IS COLON
-%right ARROW
-%right FUN REC
-%right TO LET
+%right ARROW FUN REC
+%right TO LET DO
 %nonassoc IF THEN ELSE
 %right THUNK RETURN
+
 %nonassoc EQUAL LESS
 %left PLUS MINUS
 %left TIMES
 
-%right ARROW LOLLI
+%right LOLLI
 %right TFREE TFORGET
 
 %%
@@ -121,36 +130,27 @@ cmd:
   | QUIT                        { Quit }
 
 def: 
-  | LET VAR EQUAL expr { Def ($2, $4) }
-  | DO VAR EQUAL expr  { RunDef ($2, $4) }
-
-
+  | LET VAR EQUAL expr %prec LET { Def ($2, mkEx $4) }
+  | DO VAR EQUAL expr  %prec LET { RunDef ($2, mkEx $4) }
 
 expr:
-  | app                         { $1 }
-  | infix                       { $1 }
-  | LET VAR EQUAL expr IN expr  { Ex (cLet ($2, mkEx $4, mkEx $6)) }
-  | expr TO VAR IN expr         { Ex (To (mkEx $1, $3, mkEx $5)) }
-  | IF expr THEN expr ELSE expr { Ex (cIf (mkEx $2, mkEx $4, mkEx $6)) }
-  | FUN VAR COLON expr          { Ex (Fun ($2, fst (mkFn $4), snd (mkFn $4))) }
-  | REC VAR COLON expr IS expr  { Ex (Rec ($2, mkTy $4, mkEx $6)) }
-  | MATCH expr WITH PIPE expr   { Ex (Case (mkEx $2, mkCases $5)) }
-
-  | app                 { $1 }
-  | arith               { $1 }
-  | boolean             { $1 }
-  | LET VAR EQUAL expr IN expr %prec LET  { Let ($2, $4, $6) }
-  | expr TO VAR IN expr %prec TO          { To ($1, $3, $5) }
-  | IF expr THEN expr ELSE expr	          { If ($2, $4, $6) }
-  | FUN VAR COLON ty ARROW expr %prec FUN { Fun ($2, $4, $6) }
-  | REC VAR COLON ty IS expr %prec REC    { Rec ($2, $4, $6) }
-  | RETURN expr      { Return $2 }
-  | THUNK expr       { Thunk $2 }
+  | app                          { $1 }
+  | infix                        { $1 }
+  | LET VAR EQUAL expr IN expr %prec LET { Ex (cLet ($2, mkEx $4, mkEx $6)) }
+  | expr TO VAR IN expr %prec TO { Ex (To (mkEx $1, $3, mkEx $5)) }
+  | IF expr THEN expr ELSE expr  { Ex (cIf (mkEx $2, mkEx $4, mkEx $6)) }
+  | FUN VAR COLON expr %prec FUN { Ex (Fun ($2, fst (mkFn $4), snd (mkFn $4))) }
+  | REC VAR COLON expr IS expr  %prec REC { Ex (Rec ($2, mkTy $4, mkEx $6)) }
+  | MATCH expr WITH PIPE expr    { Ex (Case (mkEx $2, mkCases $5)) }
+  | RETURN expr                  { Ex (Return (mkEx $2)) }
+  | THUNK expr                   { Ex (Thunk (mkEx $2)) }
+  | TFORGET expr                 { Ty (VForget (mkTy $2)) }
+  | TFREE expr                   { Ty (CFree (mkTy $2)) }
   
 app:
-  | non_app            { $1 }
-  | FORCE non_app      { Force $2 }
-  | app non_app        { Apply ($1, $2) }
+  | atm                         { $1 }
+  | FORCE atm                   { Ex (Force (mkEx $2)) }
+  | app atm                     { Ex (cApply (mkEx $1, mkEx $2)) }
 
 atm:
   | VAR                         { UnkVar $1 }
@@ -160,9 +160,6 @@ atm:
   | INT                         { Ex (Int $1) }
   | TINT                        { Ty (VInt) }
   | TBOOL                       { Ty (VConst "bool") }
-  | TFORGET atm                 { Ty (VForget (mkTy $2)) }
-  | TFREE atm                   { Ty (CFree (mkTy $2)) }
-  | atm LOLLI atm               { Ty (VLolli (mkTy $1, mkTy $3)) }
   | LPAREN expr RPAREN          { $2 }    
 
 infix:
@@ -173,6 +170,8 @@ infix:
   | expr EQUAL expr             { Ex (Equal (mkEx $1, mkEx $3)) }
   | expr LESS expr              { Ex (Less (mkEx $1, mkEx $3)) }
   | expr PIPE expr              { Cases (mkCases $1 @ mkCases $3) }
+  | expr LOLLI expr             { Ty (VLolli (mkTy $1, mkTy $3)) }
   | expr ARROW expr             { Arrowey ($1, $3) }
+
 
 %%
