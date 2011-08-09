@@ -106,6 +106,14 @@ let string_of_expr e =
   in
     to_str (-1) e
 
+(** [remove_assocs s pats] removes all the variables bound in the patterns
+    [pats] from the substitution [s] *)
+let rec remove_assocs s = function
+  | [] -> s
+  | Var x :: pats -> remove_assocs (List.remove_assoc x s) pats
+  | Const (c, vs) :: pats -> remove_assocs s (vs @ pats)
+  | _ :: pats -> remove_assocs s pats (* Only matches case Int if typechecked *)
+
 (** [subst [(x1,e1);...;(xn;en)] e] replaces in [e] free occurrences
     of variables [x1], ..., [xn] with expressions [e1], ..., [en]. *)
 let rec subst s = function
@@ -126,7 +134,4 @@ let rec subst s = function
   | Apply (e1, e2) -> Apply (subst s e1, subst s e2)
   | Rec (x, ty, e) -> let s' = List.remove_assoc x s in Rec (x, ty, subst s' e)
 
-and subst_case s = function
-  | (Var x, e) -> (Var x, subst (List.remove_assoc x s) e)
-  | (pat, e) -> (pat, subst s e)
-  (* XXX ASSUMES THAT THERE AREN'T CONSTANTS WITH ARGUMENTS *)
+and subst_case s (pat, e) = (pat, subst (remove_assocs s [ pat ]) e)
