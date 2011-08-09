@@ -5,7 +5,7 @@ open Syntax
 (** Exception indicating a type-checking error. *)
 exception Type_error of string
 
-(** [ty_error msg] raises exception [Type_error msg]. *)
+(** [type_error msg] raises exception [Type_error msg]. *)
 let type_error msg = raise (Type_error ("Type error: " ^ msg))
 
 let rec is_ctype = function
