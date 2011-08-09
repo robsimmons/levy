@@ -31,18 +31,11 @@
 %start toplevel
 %type <Syntax.toplevel_cmd list> toplevel
 
-<<<<<<< local
-%nonassoc TO 
-%nonassoc LET IN
-%nonassoc RETURN 
-%nonassoc THUNK 
-%nonassoc FUN ARROW REC IS
-=======
-%right TO LET
 %right ARROW
-%nonassoc FUN REC
->>>>>>> other
+%right FUN REC
+%right TO LET
 %nonassoc IF THEN ELSE
+%right THUNK RETURN
 %nonassoc EQUAL LESS
 %left PLUS MINUS
 %left TIMES
@@ -81,21 +74,13 @@ expr:
   | app                 { $1 }
   | arith               { $1 }
   | boolean             { $1 }
-<<<<<<< local
-  | LET VAR EQUAL expr IN expr  { Let ($2, $4, $6) }
-  | expr TO VAR IN expr         { To ($1, $3, $5) }
-  | IF expr THEN expr ELSE expr	{ If ($2, $4, $6) }
-  | FUN VAR COLON ty ARROW expr { Fun ($2, $4, $6) }
-  | REC VAR COLON ty IS expr    { Rec ($2, $4, $6) }
-  | RETURN expr      { Return $2 }
-  | THUNK expr       { Thunk $2 }
-=======
   | LET VAR EQUAL expr IN expr %prec LET  { Let ($2, $4, $6) }
   | expr TO VAR IN expr %prec TO          { To ($1, $3, $5) }
   | IF expr THEN expr ELSE expr	          { If ($2, $4, $6) }
   | FUN VAR COLON ty ARROW expr %prec FUN { Fun ($2, $4, $6) }
   | REC VAR COLON ty IS expr %prec REC    { Rec ($2, $4, $6) }
->>>>>>> other
+  | RETURN expr      { Return $2 }
+  | THUNK expr       { Thunk $2 }
   
 app:
   | non_app            { $1 }
