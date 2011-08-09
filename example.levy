@@ -25,7 +25,7 @@ if 2 = 2 then return 1 else return 5 ;;
 fun n : int -> return (n + 3) ;;
 
 # The parentheses around return statements aren't necessary, "return" and
-# "thunk" have lower precendence than everything except "to" and "let".
+# "thunk" have relatively low precedence.
 
 fun n : int -> 
   if n < 0
@@ -38,7 +38,7 @@ rec f : int -> F int is fun n : int ->
   if n = 0 then
     return 1
   else
-    ((force f) (n - 1) to m in return (n * m)) ;;
+    ((force f) (n - 1) to m in return n * m) ;;
 
 # Features specific to call-by-push-value:
 
@@ -56,11 +56,11 @@ force (thunk if 3 < 5 then return 1 else return 2) ;;
 
 # let binding is written like this (Paul uses "be" in place of "=")
 
-let x = 3 + 5 in return (x * x) ;;
+let x = 3 + 5 in return x * x ;;
 
 # sequencing
 
-return (3 + 5) to x in  return (x * x) ;;
+return 3 + 5 to x in  return x * x ;;
 
 # The above would be written in Haskell's do notation as
 #
@@ -72,10 +72,10 @@ return (3 + 5) to x in  return (x * x) ;;
 
 fun x : int -> return x ;;
 fun x : U F int -> force x ;;
-fun x : U F U F int -> (force x to y in force y) ;;
-fun x : U F U F U F int -> (force x to y in force y to z in force z) ;;
-fun x : int -> return (thunk (return x)) ;; 
-fun x : int -> return (thunk (return (thunk (return x)))) ;; 
+fun x : U F U F int -> force x to y in force y ;;
+fun x : U F U F U F int -> force x to y in force y to z in force z ;;
+fun x : int -> return thunk return x ;; 
+fun x : int -> return thunk return thunk return x ;; 
 
 # For convenience we have top-level definitions of values ("let x = e" instead
 # of "let x = e in ..." and top-level execution of computations ("do x = e" 

@@ -1,15 +1,15 @@
 # Here is how we can actually globally define the factorial
 # function and use it.
 
-let fact = thunk (rec f : int -> F int is fun n : int ->
-                    if n = 0 then
-                      return 1
-                    else
-                      ((force f) (n - 1) to m in return (n * m))) ;;
+let fact = thunk rec f : int -> F int is fun n : int ->
+             if n = 0 then
+               return 1
+             else
+               ((force f) (n - 1) to m in return (n * m)) ;;
 
-let f = thunk (fun n : int -> 
-                 (return (n + 7) to x in
-                  fun m : int -> return (x + m))) ;;
+let f = thunk fun n : int -> 
+          return n + 7 to x in
+          fun m : int -> return x + m ;;
 
 # Usage:
 
@@ -33,7 +33,7 @@ force f 11 19 ;;
 # associated with the partial application from happening.
 
 force f 9 ;;                   # "return (n + 7)" will get computed here
-let f' = thunk (force f 9) ;;  # "return (n + 7)" will not get computed here
+let f' = thunk force f 9 ;;    # "return (n + 7)" will not get computed here
 # do f'' = force f 9           # Not type-correct: force f 9 not an F type
 force f' 12 ;;                 # "return (n + 7)" will get computed here
 
@@ -45,10 +45,10 @@ force f' 12 ;;                 # "return (n + 7)" will get computed here
 # computation can happen in two different places because there are two 
 # different Fs.
 
-let g = thunk (fun n : int -> 
-                 (return (n + 7) to x in
-                  return (thunk (fun m : int -> 
-                    return (x + m))))) ;;
+let g = thunk fun n : int -> 
+          return n + 7 to x in
+          return thunk fun m : int -> 
+            return (x + m) ;;
 
 # Functions curried in this way are annoying in Levy, because we must 
 # explicitly sequence when computation happens.
@@ -62,14 +62,14 @@ force g' 9 ;;                  # "return (n + 7)" already computed here
 # adds a useless thunk and the "uncurrying" function delays effects, which is 
 # exactly what currying and uncurrying achieves in ML.
 
-let curry = thunk (fun f : U (int -> int -> F int) -> 
-              return (thunk (fun n : int -> 
-                return (thunk (fun m : int -> 
-                  force f n m))))) ;;
+let curry = thunk fun f : U (int -> int -> F int) -> 
+              return thunk fun n : int -> 
+                return thunk fun m : int -> 
+                  force f n m ;;
 
-let uncurry = thunk (fun g : U (int -> F U (int -> F int)) -> 
-                return (thunk (fun n : int -> fun m : int ->
-                  (force g n to g' in force g' m)))) ;;
+let uncurry = thunk fun g : U (int -> F U (int -> F int)) -> 
+                return thunk fun n : int -> fun m : int ->
+                  force g n to g' in force g' m ;;
 
 do fc = force curry f ;;
 do gc = force uncurry g ;;
