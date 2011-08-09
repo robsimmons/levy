@@ -23,6 +23,10 @@ let rec string_of_runtime = function
   | VFun _ -> "<fun>"
   | VReturn v -> "return " ^ string_of_runtime v
 
+let return = function
+  | VReturn v -> v
+  | _ -> runtime_error "Return expected in sequencing"
+
 let rec interp env = function
   | Var x ->
       (try
@@ -64,10 +68,8 @@ let rec interp env = function
 	 | _, _ -> runtime_error "Function expected in application")
   | Let (x, e1, e2) ->
       let v = interp env e1 in interp ((x,v)::env) e2
-  | To (e1, x, e2) ->
-      (match interp env e1 with
-         | VReturn v -> interp ((x,v)::env) e2
-         | _ -> runtime_error "Return expected in sequencing")
+  | To (e1, x, e2) -> 
+      let v = return (interp env e1) in interp ((x,v)::env) e2
   | Return e -> VReturn (interp env e)
   | Force e ->
       (match interp env e with

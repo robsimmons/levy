@@ -19,6 +19,7 @@
 %token COLON
 %token LPAREN RPAREN
 %token LET IN
+%token DO
 %token TO
 %token SEMICOLON2
 %token RETURN THUNK FORCE
@@ -64,7 +65,9 @@ cmd:
   | USE STRING { Use $2 }
   | QUIT       { Quit }
 
-def: LET VAR EQUAL expr { Def ($2, $4) }
+def: 
+  | LET VAR EQUAL expr { Def ($2, $4) }
+  | DO VAR EQUAL expr  { RunDef ($2, $4) }
 
 expr:
   | app                 { $1 }
