@@ -13,21 +13,21 @@ data Item: item -o tree
    | Nil: list
    | Cons: tree -o list -o list ;;
 
-# "a × b"
+# "a * b"
 let ex1left = 
   Section 
    (Cons (Item A) 
     (Cons (Item Times) 
      (Cons (Item B) Nil))) ;;
 
-# "c × d"
+# "c * d"
 let ex1right = 
   Section 
    (Cons (Item A) 
     (Cons (Item Times) 
      (Cons (Item B) Nil))) ;;
 
-# "a × b + c × d"
+# "a * b + c * d"
 let ex1 = Section (Cons ex1left (Cons (Item Plus) (Cons ex1right Nil))) ;;
 
 # The lack of polymorphic lists works as a bit of a hairshirt here, as we see 
@@ -41,7 +41,7 @@ data Top: path
 
 data Loc: path -o tree -o location ;;
 
-# The location of the second "×"
+# The location of the second "*"
 let ex2 = 
   Loc 
    (Node
