@@ -30,8 +30,7 @@
 %start toplevel
 %type <Syntax.toplevel_cmd list> toplevel
 
-%nonassoc TO 
-%nonassoc LET
+%right TO LET
 %right ARROW
 %nonassoc FUN REC
 %nonassoc IF THEN ELSE
