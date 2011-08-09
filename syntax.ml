@@ -61,6 +61,11 @@ type toplevel_cmd =
   | Use of string                 (** load a file [$use "<filename>"] *)
   | Data of (name * ltype) list   (** datatype declaration [data ...] *)
   | Quit                          (** exit toplevel [$quit] *)
+  | Expr of expr          (** an expression to be evaluated *)
+  | Def of name * expr    (** toplevel definition [let x = e] *)
+  | RunDef of name * expr (** toplevel definition [do x = e] *)
+  | Use of string         (** load a file [$use "<filename>"] *)
+  | Quit                  (** exit toplevel [$quit] *)
 
 (** Conversion from a type to a string *)
 let string_of_type ty =

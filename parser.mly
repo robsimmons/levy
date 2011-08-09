@@ -57,6 +57,7 @@
 %token COLON
 %token LPAREN RPAREN
 %token LET IN
+%token DO
 %token TO
 %token SEMICOLON2
 %token RETURN THUNK FORCE
@@ -76,8 +77,12 @@
 %nonassoc TO 
 %nonassoc LET IN
 %nonassoc FUN REC IS COLON
+%right ARROW
+%right FUN REC
+%right TO LET
 %nonassoc IF THEN ELSE
-%nonassoc EQUAL LESS 
+%right THUNK RETURN
+%nonassoc EQUAL LESS
 %left PLUS MINUS
 %left TIMES
 
@@ -115,7 +120,9 @@ cmd:
   | USE STRING                  { Use $2 }
   | QUIT                        { Quit }
 
-def: LET VAR EQUAL expr         { Def ($2, mkEx $4) }
+def: 
+  | LET VAR EQUAL expr { Def ($2, $4) }
+  | DO VAR EQUAL expr  { RunDef ($2, $4) }
 
 
 
@@ -129,12 +136,21 @@ expr:
   | REC VAR COLON expr IS expr  { Ex (Rec ($2, mkTy $4, mkEx $6)) }
   | MATCH expr WITH PIPE expr   { Ex (Case (mkEx $2, mkCases $5)) }
 
+  | app                 { $1 }
+  | arith               { $1 }
+  | boolean             { $1 }
+  | LET VAR EQUAL expr IN expr %prec LET  { Let ($2, $4, $6) }
+  | expr TO VAR IN expr %prec TO          { To ($1, $3, $5) }
+  | IF expr THEN expr ELSE expr	          { If ($2, $4, $6) }
+  | FUN VAR COLON ty ARROW expr %prec FUN { Fun ($2, $4, $6) }
+  | REC VAR COLON ty IS expr %prec REC    { Rec ($2, $4, $6) }
+  | RETURN expr      { Return $2 }
+  | THUNK expr       { Thunk $2 }
+  
 app:
-  | atm                         { $1 }
-  | FORCE atm                   { Ex (Force (mkEx $2)) }
-  | RETURN atm                  { Ex (Return (mkEx $2)) }
-  | THUNK atm                   { Ex (Thunk (mkEx $2)) }
-  | app atm                     { Ex (cApply (mkEx $1, mkEx $2)) }
+  | non_app            { $1 }
+  | FORCE non_app      { Force $2 }
+  | app non_app        { Apply ($1, $2) }
 
 atm:
   | VAR                         { UnkVar $1 }

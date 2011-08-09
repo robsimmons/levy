@@ -7,6 +7,7 @@ type environment = (name * runtime) list
 and runtime =
   | VInt of int
   | VStruct of allocated ref
+  | VBool of bool
   | VThunk of environment * expr
   | VFun of environment * name * expr
   | VReturn of runtime
@@ -27,16 +28,9 @@ let rec string_of_runtime: runtime -> string = function
   | VFun _ -> "<fun>"
   | VReturn v -> "return " ^ string_of_runtime v
 
-let mkbool = 
-  let vtrue = VStruct (ref ("true", [])) in
-  let vfalse = VStruct (ref ("false", [])) in
-  function
-    | true -> vtrue
-    | false -> vfalse
-
-let match_failure = function
-  | [] -> runtime_error "Match failure"
-  | _ -> runtime_error "Bad pattern"
+let return = function
+  | VReturn v -> v
+  | _ -> runtime_error "Return expected in sequencing"
 
 let rec interp env = function
   | Var x ->
@@ -77,10 +71,10 @@ let rec interp env = function
       (match interp env e1, interp env e2 with
 	 | VFun (env, x, e), v2 -> interp ((x,v2)::env) e
 	 | _, _ -> runtime_error "Function expected in application")
-  | To (e1, x, e2) ->
-      (match interp env e1 with
-         | VReturn v -> interp ((x,v)::env) e2
-         | _ -> runtime_error "Return expected in sequencing")
+  | Let (x, e1, e2) ->
+      let v = interp env e1 in interp ((x,v)::env) e2
+  | To (e1, x, e2) -> 
+      let v = return (interp env e1) in interp ((x,v)::env) e2
   | Return e -> VReturn (interp env e)
   | Force e ->
       (match interp env e with
