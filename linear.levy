@@ -18,6 +18,7 @@ let z4 = [x: int] Cons 5 (Cons x (Cons 12 Nil)) ;;
 let l1 = z1 (Cons 4 Nil) ;;
 let l2 = z2 (Cons 3 (z3 (Cons 4 (z4 19)))) ;;
 
+
 # We can use zippers exactly like "difference lists" in logic programming: 
 # tacking a cons cell into the hole and creating a new hole in the process.
 # These can all be represented with local pointer manipulation, and so are
@@ -30,3 +31,27 @@ let z8 = [x: list] z7 (Cons 3 x) ;;
 let z9 = [x: list] z8 (Cons 4 x) ;;
 
 
+# The inside of a linear function must be a value, and the distinguished 
+# variable must appear exactly once *within the term*.
+
+data Pair: U (int -> F int) -o int -o int -o pair ;;
+
+# This is fine:
+[x: int] Pair (thunk fun y: int -> return y + 5) x 4 ;;
+
+# These would lead to syntax errors:
+# [x: int] Pair (thunk fun y: int -> return y + 5) 5 4 ;;
+# [x: int] Pair (thunk fun y: int -> return x + 5) 5 4 ;;
+  [x: int] Pair (thunk fun y: int -> return x + 5) x 4 ;; XXX BUG THIS WORKS
+# [x: int] Pair (thunk fun y: int -> return x + 5) x x ;;
+
+
+# Zippers must be used with an affine discipline due to the fact that they
+# are implemented using pointer-munging. I see work on affine type systems 
+# as orthogonal, but I do ensure
+
+# This is displayed as a "used zipper" by the runtime
+z5 ;; 
+
+# Runtime failure, could be avoided with an affine type system
+let fails = z5 Nil ;; 
