@@ -29,7 +29,7 @@ let fatal_error msg = raise (Fatal_error msg)
 let rec exec_cmd n (ctx, env) = function
   | Expr e ->
       (* type check [e], evaluate, and print result *)
-      let ty = Type_check.type_of ctx e in
+      let ty = Type_check.type_of ctx [] e in
       Coverage.coverage e ; 
       let v = Interpret.interp env e in
 	print_endline ((if Type_check.is_ctype ty then "comp " else "val ") ^
@@ -37,7 +37,7 @@ let rec exec_cmd n (ctx, env) = function
 	(ctx, env)
   | Def (x, e) ->
       (* type check [e], evaluate it and store *)
-      let ty = Type_check.type_of ctx e in
+      let ty = Type_check.type_of ctx [] e in
         Coverage.coverage e ;
 	Type_check.check_vtype ty ;
 	let v = Interpret.interp env e in
@@ -45,7 +45,7 @@ let rec exec_cmd n (ctx, env) = function
         ((x,ty)::ctx, (x,v)::env)
   | RunDef (x, e) -> 
       (* type check [e], compute it and store *)
-      let ty = Type_check.return e (Type_check.type_of ctx e) in
+      let ty = Type_check.return e (Type_check.type_of ctx [] e) in
         Coverage.coverage e ;
         Type_check.check_vtype ty ;
         let v = Interpret.interp env e in

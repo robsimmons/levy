@@ -31,6 +31,20 @@ let z8 = [x: list] z7 (Cons 3 x) ;;
 let z9 = [x: list] z8 (Cons 4 x) ;;
 
 
+# We can quickly (constant time) turn difference lists into lists, but turning 
+# lists into difference lists is an O(n) operation that iterates over the list.
+
+let makediff = thunk rec loop : (list -> F (list -o list)) is fun xs : list ->
+  match xs with
+    | Nil -> return [hole: list] hole
+    | Cons x xs -> 
+      force loop xs to dxs in 
+      return [hole: list] Cons x (dxs hole) ;; 
+
+force makediff l1 ;;
+force makediff l2 ;;
+
+
 # The inside of a linear function must be a value, and the distinguished 
 # variable must appear exactly once *within the term*.
 
@@ -40,10 +54,10 @@ data Pair: U (int -> F int) -o int -o int -o pair ;;
 [x: int] Pair (thunk fun y: int -> return y + 5) x 4 ;;
 
 # These would lead to syntax errors:
-# [x: int] Pair (thunk fun y: int -> return y + 5) 5 4 ;;
-# [x: int] Pair (thunk fun y: int -> return x + 5) 5 4 ;;
-  [x: int] Pair (thunk fun y: int -> return x + 5) x 4 ;; XXX BUG THIS WORKS
-# [x: int] Pair (thunk fun y: int -> return x + 5) x x ;;
+# [x: int] Pair (thunk fun y: int -> return y + 5) 5 4 ;; # Syntax error
+# [x: int] Pair (thunk fun y: int -> return x + 5) 5 4 ;; # Syntax error
+# [x: int] Pair (thunk fun y: int -> return x + 5) x 4 ;; # Type error
+# [x: int] Pair (thunk fun y: int -> return x + 5) x x ;; # Syntax error
 
 
 # Zippers must be used with an affine discipline due to the fact that they
@@ -54,4 +68,7 @@ data Pair: U (int -> F int) -o int -o int -o pair ;;
 z5 ;; 
 
 # Runtime failure, could be avoided with an affine type system
-let fails = z5 Nil ;; 
+# let fails = z5 Nil ;; 
+
+
+
