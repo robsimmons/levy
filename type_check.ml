@@ -23,7 +23,7 @@ and is_vtype = function
   | (VInt | VConst _) -> true
   | VForget ty -> is_ctype ty
   | (CFree _ | CArrow _) -> false
-  | VLolli _ -> false (** VLolli is currently just an intermediate type *)
+  | VLolli _ -> true
 
 let check_ctype ty =
   if not (is_ctype ty) 
@@ -86,7 +86,7 @@ let () = check_data [ ("true", VConst "bool") ; ("false", VConst "bool") ]
     [ty] and generates the extended context produced by that pattern. *)
 let rec pat_ty ty = function
   | Var x -> [ (x, ty) ]
-  | Const (c, pats) -> 
+  | Const (c, pats, _) -> 
       let (tys, a) = check_cons c in
       if List.length tys <> List.length pats
       then 
@@ -137,7 +137,7 @@ and type_of ctx = function
        with
 	   Not_found -> type_error ("unknown identifier " ^ x))
   | Int _ -> VInt
-  | Const (c, vs) -> 
+  | Const (c, vs, _) -> 
       if not (Hashtbl.mem consTable c)
       then type_error ("unknown constructor " ^ c) ; 
       let (tys, a) = Hashtbl.find consTable c in
@@ -162,9 +162,14 @@ and type_of ctx = function
       check_vtype ty ;
       let ty2 = type_of ((x,ty)::ctx) e in
 	check_ctype ty2 ; CArrow (ty, ty2)
+  | Lin (x, ty, v) -> 
+      check_vtype ty ;
+      let ty2 = type_of ((x,ty)::ctx) v in
+        check_vtype ty2 ; VLolli (ty, ty2)
   | Apply (e1, e2) ->
       (match type_of ctx e1 with
-	 | CArrow (ty1, ty2) -> check ctx ty1 e2 ; ty2
+	 | CArrow (ty1, ty2) -> check ctx ty1 e2 ; check_ctype ty2 ; ty2
+         | VLolli (ty1, ty2) -> check ctx ty1 e2 ; check_vtype ty2 ; ty2 
 	 | ty ->
 	     type_error (string_of_expr e1 ^
 			 " is used as a function but its type is " ^

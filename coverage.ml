@@ -30,7 +30,7 @@ let rec cover_defined consts = function
           (String.concat " " (c :: List.map (fun _ -> "_") tys))
   | [ (Var x, _) ] -> if MapS.is_empty consts then redundant_error [ () ]
   | (Var x, _) :: pats -> redundant_error pats
-  | (Const (c, pats'), _) :: pats ->
+  | (Const (c, pats', None), _) :: pats ->
       let folder set = function
         | Var "_" -> set
         | Var x -> 
@@ -49,7 +49,7 @@ let check_simple_coverage = function
   | [ (Var x, _) ] -> ()
   | (Var x, _) :: pats -> redundant_error pats
   | (Int i, _) :: pats -> cover_ints i pats
-  | ((Const (c, _), _) :: _) as pats -> 
+  | ((Const (c, _, None), _) :: _) as pats -> 
       let (_, a) = Hashtbl.find consTable c in
       let consts = Hashtbl.find dataTable a in
       cover_defined consts pats
@@ -58,12 +58,13 @@ let check_simple_coverage = function
 (** [coverage e] does coverage checking on a well-typed expression [e] *)
 let rec coverage = function
   | (Var _ | Int _ | Times _ | Plus _ | Minus _ | Equal _ | Less _) -> ()
-  | Const (_, vs) -> ignore (List.map coverage vs)
+  | Const (_, vs, _) -> ignore (List.map coverage vs)
   | Thunk e -> coverage e
   | Force e -> coverage e
   | Return e -> coverage e
   | To (e1, _, e2) -> coverage e1 ; coverage e2
   | Fun (_, _, e) -> coverage e
+  | Lin (_, _, e) -> coverage e
   | Apply (e, v) -> coverage e ; coverage v
   | Rec (_, _, e) -> coverage e
   | Case (e, cases) -> 

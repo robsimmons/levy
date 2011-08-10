@@ -48,7 +48,7 @@ let rec exec_cmd n (ctx, env) = function
       let ty = Type_check.return e (Type_check.type_of ctx e) in
         Coverage.coverage e ;
         Type_check.check_vtype ty ;
-        let v = Interpret.return (Interpret.interp env e) in
+        let v = Interpret.interp env e in
         print_endline ("val " ^ x ^ " : " ^ string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;
         ((x,ty)::ctx, (x,v)::env)
   | Quit -> raise End_of_file

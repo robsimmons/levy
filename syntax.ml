@@ -27,7 +27,7 @@ and pattern = expr
 
 and expr =
   | Var of name            	  (** variable *)
-  | Const of name * value list    (** defined constant *)
+  | Const of name * value list * int option (** defined constant *)
   | Int of int             	  (** integer constant *)
   | Times of value * value 	  (** product [v1 * v2] *)
   | Plus of value * value  	  (** sum [v1 + v2] *)
@@ -39,6 +39,7 @@ and expr =
   | Return of value            	  (** [return v] *)
   | To of expr * name * expr  	  (** sequencing [e1 to x . e2] *)
   | Case of value * matches       (** case analysis [match x with ...] *)
+  | Lin of name * ltype * value   (** linear function [[x:s] v] *)
   | Fun of name * ltype * expr 	  (** function [fun x:s -> e] *)
   | Apply of expr * value      	  (** application [e v] *)
   | Rec of name * ltype * expr 	  (** recursion [rec x : t is e] *)
@@ -48,10 +49,10 @@ and matches = (pattern * expr) list
 let cLet (x, v, e) = 
   Case (v, [ (Var x, e) ])
 let cIf (v, et, ef) = 
-  Case (v, [ (Const ("true", []), et); (Const ("false", []), ef) ])
+  Case (v, [ (Const ("true", [], None), et); (Const ("false", [], None), ef) ])
 let cApply (e, v) = 
   match e with
-    | Const (x, vs) -> Const (x, vs @ [ v ])
+    | Const (x, vs, pos) -> Const (x, vs @ [ v ], pos)
     | _ -> Apply (e, v)
 
 (** Toplevel commands *)
@@ -85,23 +86,24 @@ let string_of_expr e =
     and to_str n e =
     let (m, str) =
       match e with
-	| Int n ->           (10, string_of_int n)
-	| Var x ->           (10, x)
-	| Const (x, []) ->   (10, x)
-        | Const (x, vs) ->   ( 9, x ^ " " ^ String.concat " " (List.map (to_str 9) vs))
-	| Return e ->        ( 9, "return " ^ (to_str 9 e))
-	| Force e ->         ( 9, "force " ^ (to_str 9 e))
-	| Thunk e ->         ( 9, "thunk " ^ (to_str 9 e))
-	| Apply (e1, e2) ->  ( 9, (to_str 8 e1) ^ " " ^ (to_str 9 e2))
-	| Times (e1, e2) ->  ( 8, (to_str 7 e1) ^ " * " ^ (to_str 8 e2))
-	| Plus (e1, e2) ->   ( 7, (to_str 6 e1) ^ " + " ^ (to_str 7 e2))
-	| Minus (e1, e2) ->  ( 7, (to_str 6 e1) ^ " - " ^ (to_str 7 e2))
-	| Equal (e1, e2) ->  ( 5, (to_str 5 e1) ^ " = " ^ (to_str 5 e2))
-	| Less (e1, e2) ->   ( 5, (to_str 5 e1) ^ " < " ^ (to_str 5 e2))
-        | Case (e, cases) -> ( 4, "match " ^ (to_str 4 e) ^ " with " ^ (to_str_cases cases))
-	| Fun (x, ty, e) ->  ( 2, "fun " ^ x ^ " : " ^ (string_of_type ty) ^ " -> " ^ (to_str 0 e))
-	| Rec (x, ty, e) ->  ( 2, "rec " ^ x ^ " : " ^ (string_of_type ty) ^ " is " ^ (to_str 0 e))
-	| To (e1, x, e2) ->  ( 1, to_str 1 e1 ^ " to " ^ x ^ " . " ^ to_str 0 e2)
+	| Int n ->            (10, string_of_int n)
+	| Var x ->            (10, x)
+	| Const (x, [], _) -> (10, x)
+        | Const (x, vs, _) -> ( 9, x ^ " " ^ String.concat " " (List.map (to_str 9) vs))
+	| Return e ->         ( 9, "return " ^ (to_str 9 e))
+	| Force e ->          ( 9, "force " ^ (to_str 9 e))
+	| Thunk e ->          ( 9, "thunk " ^ (to_str 9 e))
+	| Apply (e1, e2) ->   ( 9, (to_str 8 e1) ^ " " ^ (to_str 9 e2))
+	| Times (e1, e2) ->   ( 8, (to_str 7 e1) ^ " * " ^ (to_str 8 e2))
+	| Plus (e1, e2) ->    ( 7, (to_str 6 e1) ^ " + " ^ (to_str 7 e2))
+	| Minus (e1, e2) ->   ( 7, (to_str 6 e1) ^ " - " ^ (to_str 7 e2))
+	| Equal (e1, e2) ->   ( 5, (to_str 5 e1) ^ " = " ^ (to_str 5 e2))
+	| Less (e1, e2) ->    ( 5, (to_str 5 e1) ^ " < " ^ (to_str 5 e2))
+        | Case (e, cases) ->  ( 4, "match " ^ (to_str 4 e) ^ " with " ^ (to_str_cases cases))
+        | Lin (x, ty, e) ->   ( 3, "[" ^ x ^ ":" ^ (string_of_type ty) ^ "]" ^ (to_str 0 e))
+	| Fun (x, ty, e) ->   ( 2, "fun " ^ x ^ " : " ^ (string_of_type ty) ^ " -> " ^ (to_str 0 e))
+	| Rec (x, ty, e) ->   ( 2, "rec " ^ x ^ " : " ^ (string_of_type ty) ^ " is " ^ (to_str 0 e))
+	| To (e1, x, e2) ->   ( 1, to_str 1 e1 ^ " to " ^ x ^ " . " ^ to_str 0 e2)
     in
       if m > n then str else "(" ^ str ^ ")"
   in
@@ -112,7 +114,7 @@ let string_of_expr e =
 let rec remove_assocs s = function
   | [] -> s
   | Var x :: pats -> remove_assocs (List.remove_assoc x s) pats
-  | Const (c, vs) :: pats -> remove_assocs s (vs @ pats)
+  | Const (c, vs, _) :: pats -> remove_assocs s (vs @ pats)
   | _ :: pats -> remove_assocs s pats (* Only matches case Int if typechecked *)
 
 (** [subst [(x1,e1);...;(xn;en)] e] replaces in [e] free occurrences
@@ -120,7 +122,7 @@ let rec remove_assocs s = function
 let rec subst s = function
   | (Var x) as e -> (try List.assoc x s with Not_found -> e)
   | (Int _) as e -> e
-  | Const (x, vs) -> Const (x, List.map (subst s) vs)
+  | Const (x, vs, pos) -> Const (x, List.map (subst s) vs, pos)
   | Times (e1, e2) -> Times (subst s e1, subst s e2)
   | Plus (e1, e2) -> Plus (subst s e1, subst s e2)
   | Minus (e1, e2) -> Minus (subst s e1, subst s e2)
@@ -128,6 +130,7 @@ let rec subst s = function
   | Less (e1, e2) -> Less (subst s e1, subst s e2)
   | Case (e, cases) -> Case (subst s e, List.map (subst_case s) cases)
   | Fun (x, ty, e) -> let s' = List.remove_assoc x s in Fun (x, ty, subst s' e)
+  | Lin (x, ty, e) -> let s' = List.remove_assoc x s in Fun (x, ty, subst s' e)
   | To (e1, x, e2) -> To (subst s e1, x, subst (List.remove_assoc x s) e2)
   | Return e -> Return (subst s e)
   | Force e -> Force (subst s e)

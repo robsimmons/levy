@@ -50,6 +50,36 @@
                               " includes pipe")
     | UnkVar x -> syntax_error ("function body (form 'type -> expression') " ^ 
                                " parsed as single variable " ^ x)
+
+  (* Search for the linear occurrance within a datatype, transform the
+   * expression accordingly. *)
+  let rec cLinFun (x, ty) = function
+    | Var y -> (x = y, Var y) 
+    | Const (c, vs, None) -> 
+        let folder (found_here, v) (found_later, vs, n) = 
+          if found_here && found_later 
+          then syntax_error ("linear " ^ x ^ " appears more than once") ; 
+          if found_later then (true, v :: vs, n+1)
+          else (found_here, v :: vs, n) in
+        let vs' = List.map (cLinFun (x, ty)) vs in
+        let (found, vs'', pos) = List.fold_right folder vs' (false, [], 0) in
+        (found, Const (c, vs'', if found then Some pos else None))
+    | Const (x, vs, Some _) ->
+        syntax_error ("linear " ^ x ^ " shares scope with another " ^ 
+                      "linear variable")
+    | Apply (v1, v2) -> 
+        let (found1, v1') = cLinFun (x, ty) v1 in 
+        let (found2, v2') = cLinFun (x, ty) v2 in 
+        if found1 && found2 
+        then syntax_error ("linear " ^ x ^ " appears more than once") ; 
+        (found1 || found2, Apply (v1', v2'))
+    | v -> (false, v)
+
+  let cLinFun (x, ty, e) = 
+    let (occ, v) = cLinFun (x, ty) e in
+    if not occ then syntax_error ("linear " ^ x ^ " did not occur") ;
+    Lin (x, ty, v)    
+
 %}
 
 %token TINT
@@ -69,6 +99,7 @@
 %token REC IS
 %token COLON
 %token LPAREN RPAREN
+%token LBRACK RBRACK
 %token LET IN
 %token DO
 %token TO
@@ -78,6 +109,7 @@
 %token USE
 %token <string>STRING
 %token COMMA
+%token CARAT
 %token EOF
 %token DATA LOLLI
 %token MATCH WITH PIPE END
@@ -86,7 +118,7 @@
 %type <Syntax.toplevel_cmd list> toplevel
 
 %right PIPE
-%right ARROW FUN REC
+%right ARROW FUN REC RBRACK
 %right TO LET DO
 %nonassoc IF THEN ELSE
 %right THUNK RETURN
@@ -146,6 +178,7 @@ expr:
   | THUNK expr                   { Ex (Thunk (mkEx $2)) }
   | TFORGET expr                 { Ty (VForget (mkTy $2)) }
   | TFREE expr                   { Ty (CFree (mkTy $2)) }
+  | LBRACK VAR COLON expr RBRACK expr { Ex (cLinFun ($2, mkTy $4, mkEx $6)) }
   
 app:
   | atm                         { $1 }
@@ -154,9 +187,9 @@ app:
 
 atm:
   | VAR                         { UnkVar $1 }
-  | UVAR                        { Ex (Const ($1, [])) }
-  | TRUE                        { Ex (Const ("true", [])) }
-  | FALSE                       { Ex (Const ("false", [])) }
+  | UVAR                        { Ex (Const ($1, [], None)) }
+  | TRUE                        { Ex (Const ("true", [], None)) }
+  | FALSE                       { Ex (Const ("false", [], None)) }
   | INT                         { Ex (Int $1) }
   | TINT                        { Ty (VInt) }
   | TBOOL                       { Ty (VConst "bool") }

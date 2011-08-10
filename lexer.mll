@@ -51,9 +51,12 @@ rule token = parse
   | '\"' [^'\"']* '\"' { let str = lexeme lexbuf in
 			STRING (String.sub str 1 (String.length str - 2)) }
 
+  | '^'             { CARAT }
   | '|'             { PIPE }
   | '('             { LPAREN }
   | ')'             { RPAREN }
+  | '['             { LBRACK }
+  | ']'             { RBRACK }
   | '*'             { TIMES }
   | '+'             { PLUS }
   | '-'             { MINUS }

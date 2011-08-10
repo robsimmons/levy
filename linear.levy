@@ -1,0 +1,9 @@
+
+
+data Nil: list
+   | Cons: int -o list -o list ;;
+
+let z1 = [x: list] x ;;
+let z2 = [x: list] Cons 4 x ;; 
+let z3 = [x: list] Cons 5 (Cons 9 (Cons 12 x)) ;;
+let z4 = [x: int] Cons 5 (Cons x (Cons 12 Nil)) ;; 
