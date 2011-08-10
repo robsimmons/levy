@@ -7,3 +7,6 @@ let z1 = [x: list] x ;;
 let z2 = [x: list] Cons 4 x ;; 
 let z3 = [x: list] Cons 5 (Cons 9 (Cons 12 x)) ;;
 let z4 = [x: int] Cons 5 (Cons x (Cons 12 Nil)) ;; 
+
+z1 (Cons 4 Nil) ;;
+z2 (Cons 3 (z3 (Cons 4 (z4 19)))) ;;

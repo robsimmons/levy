@@ -94,6 +94,10 @@ let rec interp env = function
   | Apply (e1, e2) ->
       (match (interp env e1), (interp env e2) with
 	 | { contents = Closed (env, x, e) }, v2 -> interp ((x,v2)::env) e
+         | { contents = Zipped ({ contents = Zipper (v, hole) } as r) }, v2 ->
+           r := Invalid ; hole := !v2 ; v
+         | { contents = Zipped { contents = Invalid } }, _ ->
+           runtime_error "Zipper reused more than once"
 	 | _, _ -> runtime_error "Function expected in application")
   | To (e1, x, e2) -> interp ((x, interp env e1)::env) e2
   | Return e -> interp env e
@@ -124,9 +128,14 @@ and interp_lin env y = function
               (interp env v :: vs, hole) in
       let (vs, hole) = interp_lins n vs in
       (ref (Tagged (c, vs)), hole)
-  | Apply (f, Var x) ->
-      if x <> y then runtime_error ("Wrong linear variable!") ;
-      runtime_error "not ready to handle applies"
+  | Apply (v1, v2) ->
+      (match (interp env v1), (interp_lin env y v2) with
+         | { contents = Zipped ({ contents = Zipper (v1, old_hole) } as r) }, 
+           (v2, hole) ->
+           r := Invalid ; hole := !v2 ; (v1, hole)
+         | { contents = Zipped { contents = Invalid } }, _ ->
+           runtime_error "Zipper reused more than once"
+	 | _, _ -> runtime_error "Function expected in application")
   | e -> runtime_error ("expression " ^ string_of_expr e ^ " can't have holes")
 
 and match_int env i = function
