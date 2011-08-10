@@ -1,12 +1,32 @@
-
+# Linear terms and linear application
 
 data Nil: list
    | Cons: int -o list -o list ;;
 
-let z1 = [x: list] x ;;
-let z2 = [x: list] Cons 4 x ;; 
+# We can use linear terms to put *holes* in data. The syntax ([x: ty] ...),
+# where x appears possibly under some term constructors, programmatially 
+# represents the informal "imagine we have a list with one hole in it"
+
+let z1 = [x: list] Cons 4 x ;; 
+let z2 = [x: list] x ;;
 let z3 = [x: list] Cons 5 (Cons 9 (Cons 12 x)) ;;
 let z4 = [x: int] Cons 5 (Cons x (Cons 12 Nil)) ;; 
 
-z1 (Cons 4 Nil) ;;
-z2 (Cons 3 (z3 (Cons 4 (z4 19)))) ;;
+# Zippers are values, the application of a zipper to a value is also a value
+# (you can think if it like "plus")
+
+let l1 = z1 (Cons 4 Nil) ;;
+let l2 = z2 (Cons 3 (z3 (Cons 4 (z4 19)))) ;;
+
+# We can use zippers exactly like "difference lists" in logic programming: 
+# tacking a cons cell into the hole and creating a new hole in the process.
+# These can all be represented with local pointer manipulation, and so are
+# effectively constant-time operations regardless of the length of the list.
+
+let z5 = [x: list] x ;;
+let z6 = [x: list] z5 (Cons 1 x) ;;
+let z7 = [x: list] z6 (Cons 2 x) ;;
+let z8 = [x: list] z7 (Cons 3 x) ;;
+let z9 = [x: list] z8 (Cons 4 x) ;;
+
+
