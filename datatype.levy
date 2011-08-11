@@ -33,10 +33,11 @@ let nil = thunk fun x: list ->
 force nil Nil ;;
 force nil (Cons 4 Nil) ;;
 
-let sumlist = thunk rec sl : list -> F int is fun xs : list ->
-  match xs with
-    | Nil -> return 0
-    | Cons x xs -> force sl xs to y in return x + y ;;
+let sumlist = thunk rec sumlist : list -> F int is
+  fun xs : list ->
+    match xs with
+      | Nil -> return 0
+      | Cons x xs -> force sumlist xs to y in return x + y ;;
 
 force sumlist v4 ;;
 
