@@ -45,8 +45,8 @@ and expr =
 
 and matches = (pattern * expr) list
 
-let cLet (x, v, e) = 
-  Case (v, [ (Var x, e) ])
+let cLet (pat, v, e) = 
+  Case (v, [ (pat, e) ])
 let cIf (v, et, ef) = 
   Case (v, [ (Const ("true", []), et); (Const ("false", []), ef) ])
 let cApply (e, v) = 

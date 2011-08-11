@@ -69,7 +69,7 @@
 %token REC IS
 %token COLON
 %token LPAREN RPAREN
-%token LET IN
+%token LET VAL COMP IN BE
 %token DO
 %token TO
 %token SEMICOLON2
@@ -130,13 +130,13 @@ cmd:
   | QUIT                        { Quit }
 
 def: 
-  | LET VAR EQUAL expr %prec LET { Def ($2, mkEx $4) }
-  | DO VAR EQUAL expr  %prec LET { RunDef ($2, mkEx $4) }
+  | VAL VAR EQUAL expr %prec LET { Def ($2, mkEx $4) }
+  | COMP VAR EQUAL expr  %prec LET { RunDef ($2, mkEx $4) }
 
 expr:
   | app                          { $1 }
   | infix                        { $1 }
-  | LET VAR EQUAL expr IN expr %prec LET { Ex (cLet ($2, mkEx $4, mkEx $6)) }
+  | LET expr BE expr IN expr %prec LET { Ex (cLet (mkEx $2, mkEx $4, mkEx $6)) }
   | expr TO VAR IN expr %prec TO { Ex (To (mkEx $1, $3, mkEx $5)) }
   | IF expr THEN expr ELSE expr  { Ex (cIf (mkEx $2, mkEx $4, mkEx $6)) }
   | FUN VAR COLON expr %prec FUN { Ex (Fun ($2, fst (mkFn $4), snd (mkFn $4))) }

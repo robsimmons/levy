@@ -5,12 +5,12 @@
 data IAmAnInt: int -o intorbool
    | IAmABool: bool -o intorbool ;;
 
-let v1 = IAmAnInt 4 ;;
-let v2 = IAmABool false ;;
+val v1 = IAmAnInt 4 ;;
+val v2 = IAmABool false ;;
 
 data Pair: int -o bool -o intandbool ;;
 
-let v3 = Pair 12 true ;;
+val v3 = Pair 12 true ;;
 
 
 # Datatype declarations are most useful for their introduciton of inductive
@@ -22,10 +22,10 @@ data Nil: list
 data Emp: tree
    | Node: tree -o int -o tree -o tree ;;
 
-let v4 = Cons 4 (Cons 6 (Cons 19 (Cons (-4) Nil)))
-let v5 = Node (Node Emp 3 Emp) 5 (Node Emp 7 (Node Emp 9 Emp)) ;;
+val v4 = Cons 4 (Cons 6 (Cons 19 (Cons (-4) Nil)))
+val v5 = Node (Node Emp 3 Emp) 5 (Node Emp 7 (Node Emp 9 Emp)) ;;
 
-let nil = thunk fun x: list -> 
+val nil = thunk fun x: list -> 
   match x with 
     | Nil -> return true
     | y -> return false ;;
@@ -33,7 +33,7 @@ let nil = thunk fun x: list ->
 force nil Nil ;;
 force nil (Cons 4 Nil) ;;
 
-let sumlist = thunk rec sumlist : list -> F int is
+val sumlist = thunk rec sumlist : list -> F int is
   fun xs : list ->
     match xs with
       | Nil -> return 0
@@ -41,7 +41,7 @@ let sumlist = thunk rec sumlist : list -> F int is
 
 force sumlist v4 ;;
 
-let map = thunk fun f : U (int -> F int) -> 
+val map = thunk fun f : U (int -> F int) -> 
   rec mp : list -> F list is fun xs : list ->
     match xs with
       | Nil -> return Nil
@@ -63,7 +63,7 @@ data Z: even
    | EO: even -o odd
    | OE: odd -o even ;;
 
-let four = OE (EO (OE (EO Z))) ;;
+val four = OE (EO (OE (EO Z))) ;;
 
 # At the end of a datatype declaration the type is closed; it would be an error
 # to have a subsequent declaration like `data One: even`

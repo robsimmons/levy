@@ -26,8 +26,9 @@ rule token = parse
   | "bool"          { TBOOL }
   | "int"           { TINT }
 
+  | "be"            { BE }
+  | "comp"          { COMP }
   | "data"          { DATA }
-  | "do"            { DO }
   | "else"          { ELSE }
   | "false"         { FALSE }
   | "force"         { FORCE }
@@ -43,6 +44,7 @@ rule token = parse
   | "thunk"         { THUNK }
   | "to"            { TO }
   | "true"          { TRUE }
+  | "val"           { VAL }
   | "with"          { WITH }
 
   | "$use"           { USE }

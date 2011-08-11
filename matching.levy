@@ -8,7 +8,7 @@ data Nil: list
 # The function returning the head of a list can be defined with an incomplete
 # pattern match.
 
-let hd = thunk fun xs : list ->
+val hd = thunk fun xs : list ->
   match xs with
     | Cons x _ -> return x ;;
 
