@@ -20,8 +20,7 @@ for concrete syntax, the file
 focuses on the concrete syntax of functions.
 
 The Levy# language in this branch of the repository is a modification of Levy
-with user-defined datatypes and match statements; it is described in a blog post
-[here](http://requestforlogic.blogspot.com/2011/08/embracing-and-extending-levy-language.html). 
+with user-defined datatypes and match statements.
 Match statements and user-defined enumerations are discussed in 
 [switch.levy](http://github.com/robsimmons/levy/blob/datatype/switch.levy),
 full user-defined datatypes are discussed in 
@@ -29,12 +28,15 @@ full user-defined datatypes are discussed in
 Match statements lead to the possibility of non-exhaustive match exceptions;
 the possibility of such a runtime error generates a compile-time warning, as
 discussed in 
-[matching.levy](http://github.com/robsimmons/levy/blob/datatype/matching.levy)
+[matching.levy](http://github.com/robsimmons/levy/blob/datatype/matching.levy).
 
 The language is different enough from standard functional languages
 that you will not be able to guess how it works without reading about
 call-by-push-value first. A good place to start is Paul Levy's FAQ at
-<http://www.cs.bham.ac.uk/~pbl/cbpv.html>.
+<http://www.cs.bham.ac.uk/~pbl/cbpv.html>. There is also a blog post 
+about Levy# at 
+<http://requestforlogic.blogspot.com/2011/08/embracing-and-extending-levy-language.html> 
+aimed at people who may be unfamiliar with call-by-push-value.
 
 
 # Authors
