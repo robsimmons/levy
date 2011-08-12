@@ -1,6 +1,6 @@
 # This example file demonstrates match statements
 
-let x = 5 in return (x + 9) ;;
+let x be 5 in return (x + 9) ;;
 
 # really just parses as
 
@@ -21,7 +21,7 @@ match 5 < 4 with
 
 # By adding match statements, we get the equivalent of "switch" in c:
 
-let f = thunk (fun x: int ->
+val f = thunk (fun x: int ->
   match x with
     | 1 -> return 4
     | 2 -> return 3
@@ -45,7 +45,7 @@ data Red: color
    | Green: color ;;
 
 Red ;;
-let colorcode = thunk (fun x: color -> 
+val colorcode = thunk (fun x: color -> 
   match x with
    | Red -> return 0
    | Blue -> return 1

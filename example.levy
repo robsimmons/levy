@@ -54,9 +54,9 @@ thunk if 3 < 5 then return 1 else return 2 ;;
 
 force (thunk if 3 < 5 then return 1 else return 2) ;;
 
-# let binding is written like this (Paul uses "be" in place of "=")
+# let binding is written like this 
 
-let x = 3 + 5 in return x * x ;;
+let x be 3 + 5 in return x * x ;;
 
 # sequencing
 
@@ -77,18 +77,18 @@ fun x : U F U F U F int -> force x to y in force y to z in force z ;;
 fun x : int -> return thunk return x ;; 
 fun x : int -> return thunk return thunk return x ;; 
 
-# For convenience we have top-level definitions of values ("let x = e" instead
-# of "let x = e in ..." and top-level execution of computations ("do x = e" 
+# For convenience we have top-level definitions of values ("val x = e" instead
+# of "let x be e in ..." and top-level execution of computations ("comp x = e" 
 # instead of "e to x in ..."): 
 
-let a = 5 ;;
+val a = 5 ;;
 
-let b = 10 + a ;;
+val b = 10 + a ;;
 
-let c = thunk (return b) ;;
+val c = thunk (return b) ;;
 
-do d = force c ;;
+comp d = force c ;;
 
-do e = return (a + d) ;;
+comp e = return (a + d) ;;
 
-do f = (fun x : int -> return (x + 2)) 19 ;;
+comp f = (fun x : int -> return (x + 2)) 19 ;;

@@ -14,21 +14,21 @@ data Item: item -o tree
    | Cons: tree -o list -o list ;;
 
 # "a * b"
-let ex1left = 
+val ex1left = 
   Section 
    (Cons (Item A) 
     (Cons (Item Times) 
      (Cons (Item B) Nil))) ;;
 
 # "c * d"
-let ex1right = 
+val ex1right = 
   Section 
    (Cons (Item A) 
     (Cons (Item Times) 
      (Cons (Item B) Nil))) ;;
 
 # "a * b + c * d"
-let ex1 = Section (Cons ex1left (Cons (Item Plus) (Cons ex1right Nil))) ;;
+val ex1 = Section (Cons ex1left (Cons (Item Plus) (Cons ex1right Nil))) ;;
 
 # The lack of polymorphic lists works as a bit of a hairshirt here, as we see 
 # that the lists in the zipper structures are a bit different, and we want one 
@@ -42,7 +42,7 @@ data Top: path
 data Loc: path -o tree -o location ;;
 
 # The location of the second "*"
-let ex2 = 
+val ex2 = 
   Loc 
    (Node
      (Cons (Item C) Nil)
@@ -56,44 +56,33 @@ let ex2 =
 
 # Navigation primitives in trees
 
-let revappend = thunk rec revappend : list -> list -> F list is 
+val revappend = thunk rec revappend : list -> list -> F list is 
   fun xs : list ->
   fun ys : list -> 
     match xs with
       | Nil -> return ys
       | Cons x xs -> force revappend xs (Cons x ys)
 
-let go_left = thunk fun loc : location -> 
-  match loc with 
-    | Loc path tree -> 
-       (match path with
-          | Node left up right ->
-             (match left with 
-                | Cons lsibling left -> 
-                   (return Loc (Node left up (Cons tree right)) lsibling))) ;;
+val go_left = thunk fun loc : location -> 
+  let (Loc path tree) be loc in
+  let (Node left up right) be path in
+  let (Cons lsibling left) be left in
+  return Loc (Node left up (Cons tree right)) lsibling ;;
 
-let go_right = thunk fun loc : location -> 
-  match loc with 
-    | Loc path tree -> 
-       (match path with
-          | Node left up right ->
-             (match right with 
-                | Cons rsibling right -> 
-                   (return Loc (Node (Cons tree left) up  right) rsibling))) ;;
+val go_right = thunk fun loc : location ->
+  let (Loc path tree) be loc in
+  let (Node left up right) be path in
+  let (Cons rsibling right) be right in
+  return Loc (Node (Cons tree left) up right) rsibling ;;
 
-let go_up = thunk fun loc : location -> 
-  match loc with
-    | Loc path tree ->
-       (match path with
-          | Node left up right ->
-              force revappend left (Cons tree right) to trees in 
-              return Loc up (Section trees)) ;; 
+val go_up = thunk fun loc : location -> 
+  let (Loc path tree) be loc in
+  let (Node left up right) be path in 
+  force revappend left (Cons tree right) to trees in 
+  return Loc up (Section trees) ;; 
 
-let go_down = thunk fun loc : location ->
-  match loc with
-    | Loc path tree ->
-       (match tree with
-          | Section trees -> 
-             (match trees with 
-                | Cons t1 trees -> 
-                    return Loc (Node Nil path trees) t1)) ;;
+val go_down = thunk fun loc : location ->
+  let (Loc path tree) be loc in 
+  let (Section trees) be tree in
+  let (Cons t1 trees) be trees in 
+  return Loc (Node Nil path trees) t1 ;;

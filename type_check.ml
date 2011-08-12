@@ -50,7 +50,8 @@ let rec unfold_lolli collected = function
   | ty -> type_error (string_of_type ty ^ " is not a valid constructed type")
 
 (** [chk_data to_add data] is a tail recursive function that collects data
-    in the map [to_add]  *)
+    in the map [to_add], checking that a set of datatype declarations are 
+    kosher. May not be exactly right. *)
 let rec chk_data (to_add: vtype list MapS.t MapS.t) = function
   | [] -> 
     (* All cases covered, add them to the persistant store *)
