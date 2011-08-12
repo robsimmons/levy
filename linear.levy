@@ -55,14 +55,14 @@ data Pair: U (int -> F int) -o int -o int -o pair ;;
 
 # These would lead to syntax errors:
 # [x: int] Pair (thunk fun y: int -> return y + 5) 5 4 ;; # Syntax error
-# [x: int] Pair (thunk fun y: int -> return x + 5) 5 4 ;; # Syntax error
-# [x: int] Pair (thunk fun y: int -> return x + 5) x 4 ;; # Type error
-# [x: int] Pair (thunk fun y: int -> return x + 5) x x ;; # Syntax error
+# [x: int] Pair (thunk fun y: int -> return y + x) 5 4 ;; # Syntax error
+# [x: int] Pair (thunk fun y: int -> return y + x) x 4 ;; # Type error
+# [x: int] Pair (thunk fun y: int -> return y + x) x x ;; # Syntax error
 
 
 # Zippers must be used with an affine discipline due to the fact that they
 # are implemented using pointer-munging. I see work on affine type systems 
-# as orthogonal, but I do ensure
+# as orthogonal, so re-using zippers causes a runtime error.
 
 # This is displayed as a "used zipper" by the runtime
 z5 ;; 

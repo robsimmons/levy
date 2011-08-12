@@ -23,28 +23,43 @@ data Nil: list
 # bat, since it iterates over one of the lists given as input.
 
 # The difference list solution uses an intermediate data structure of three
-# (list -o list)s. 
+# (list -o list)s that hold the partitioned list beginnings while we recurse
+# over the list end. At each step, we pull something off the list end and tack
+# it on to the appropriate list beginning, and once we reach the end of the
+# unpartioned list, we concatenate all three partitions.
 
-# takes the *end* of a list, and the bucketed *beginnings* of that list
-# and returns the bucketed entire list (tail recursive function)
-val dutch' = thunk rec loop : (list -o list) 
-                                -> (list -o list) 
-                                   -> (list -o list) -> list -> F list is 
+val dutch' = thunk rec loop : 
+    (list -o list) 
+      -> (list -o list) 
+        -> (list -o list) 
+          -> list 
+            -> F list is 
   fun reds : (list -o list) -> 
   fun whites : (list -o list) -> 
   fun blues : (list -o list) -> 
   fun xs : list -> 
     match xs with
       | Nil -> return (reds (whites (blues Nil)))
-      | Cons y ys -> 
-         (match y with 
+      | Cons x xs -> 
+         (match x with 
             | Red i -> 
-                force loop ([hole: list] reds (Cons y hole)) whites blues ys
+                force loop 
+                  ([hole: list] reds (Cons x hole)) 
+                  whites 
+                  blues 
+                  xs
             | White i ->  
-                force loop reds ([hole: list] whites (Cons y hole)) blues ys
+                force loop 
+                  reds  
+                  ([hole: list] whites (Cons x hole)) 
+                  blues 
+                  xs
             | Blue i -> 
-                force loop reds whites ([hole: list] blues (Cons y hole)) ys)
-;;
+                force loop 
+                  reds 
+                  whites 
+                  ([hole: list] blues (Cons x hole)) 
+                  xs) ;;
 
 val dutch = thunk fun xs : list -> 
   force dutch' ([x: list] x) ([x: list] x) ([x: list] x) xs ;;
