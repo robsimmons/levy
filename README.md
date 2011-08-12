@@ -14,23 +14,23 @@ The Levy language has the following features:
 * call-by-push-value features: return, thunk, force, sequence, and let binding
 
 See the file 
-[example.levy]: http://github.com/robsimmons/levy/blob/datatype/example.levy 
+[example.levy](http://github.com/robsimmons/levy/blob/datatype/example.levy) 
 for concrete syntax, the file
-[functions.levy]: http://github.com/robsimmons/levy/blob/datatype/functions.levy
+[functions.levy](http://github.com/robsimmons/levy/blob/datatype/functions.levy)
 focuses on the concrete syntax of functions.
 
 The Levy# language in this branch of the repository is a modification of Levy
 with user-defined datatypes and match statements; it is described in a blog post
-[here]: http://requestforlogic.blogspot.com/2011/08/embracing-and-extending-levy-language.html. 
+[here](http://requestforlogic.blogspot.com/2011/08/embracing-and-extending-levy-language.html). 
 Match statements and user-defined enumerations are discussed in 
-[switch.levy]: http://github.com/robsimmons/levy/blob/datatype/switch.levy,
+[switch.levy](http://github.com/robsimmons/levy/blob/datatype/switch.levy),
 full user-defined datatypes are discussed in 
-[datatype.levy]: http://github.com/robsimmons/levy/blob/datatype/datatype.levy.
+[datatype.levy](http://github.com/robsimmons/levy/blob/datatype/datatype.levy).
 
 Match statements lead to the possibility of non-exhaustive match exceptions;
 the possibility of such a runtime error generates a compile-time warning, as
 discussed in 
-[matching.levy]: http://github.com/robsimmons/levy/blob/datatype/matching.levy
+[matching.levy](http://github.com/robsimmons/levy/blob/datatype/matching.levy)
 
 The language is different enough from standard functional languages
 that you will not be able to guess how it works without reading about
@@ -66,7 +66,7 @@ For the native code version run
 
 If you do not have the make utility, run
 
-   ocamlbuild levy.byte
+    ocamlbuild levy.byte
 
 
 # Usage
