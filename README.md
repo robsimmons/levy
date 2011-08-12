@@ -26,7 +26,6 @@ Match statements and user-defined enumerations are discussed in
 [switch.levy](http://github.com/robsimmons/levy/blob/datatype/switch.levy),
 full user-defined datatypes are discussed in 
 [datatype.levy](http://github.com/robsimmons/levy/blob/datatype/datatype.levy).
-
 Match statements lead to the possibility of non-exhaustive match exceptions;
 the possibility of such a runtime error generates a compile-time warning, as
 discussed in 
