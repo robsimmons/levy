@@ -1,40 +1,53 @@
+# The Dutch National Flag problem was proposed by Edsger Dijkstra. The flag
+# of the Netherlands consists of three colors: Red, White, and Blue. We can
+# tag integers as having one of these colors:
 
 data Red: int -o coloredint
    | White: int -o coloredint
    | Blue: int -o coloredint ;;
 
+
+# The input and output of the Dutch National Flag problem is a list of colored
+# integers. The input is an arbitrary list, and the red integers (in the order
+# they appeared in the original list) followed by the white integers (in the 
+# order they appeared in the original list) followed by the blue integers (in 
+# the order they appeard in the original list). 
+
 data Nil: list
    | Cons: coloredint -o list -o list ;;
 
-data Tuple: (list -o list) -o (list -o list) -o (list -o list) -o tuple ;;
 
-# The Dutch National Flag problem (desc desc)
+# The catch is that we are only allowed to traverse any part of the list once.
+# We can iterate over the original list, of course, but we can't iterate over 
+# anything else, so the usual "append" function can be thrown out right off the
+# bat, since it iterates over one of the lists given as input.
+
+# The difference list solution uses an intermediate data structure of three
+# (list -o list)s. 
+
 # takes the *end* of a list, and the bucketed *beginnings* of that list
 # and returns the bucketed entire list (tail recursive function)
-let dutch' = thunk rec loop : tuple -> list -> F list is 
-  fun tup : tuple -> 
+val dutch' = thunk rec loop : (list -o list) 
+                                -> (list -o list) 
+                                   -> (list -o list) -> list -> F list is 
+  fun reds : (list -o list) -> 
+  fun whites : (list -o list) -> 
+  fun blues : (list -o list) -> 
   fun xs : list -> 
-    match tup with 
-      | Tuple reds whites blues -> 
-         (match xs with
-            | Nil -> return (reds (whites (blues Nil)))
-            | Cons y ys -> 
-               (match y with 
-                  | Red i -> 
-                      force loop 
-                        (Tuple ([hole: list] reds (Cons y hole)) whites blues)
-                        ys
-                  | White i ->  
-                      force loop 
-                        (Tuple reds ([hole: list] whites (Cons y hole)) blues)
-                        ys
-                  | Blue i -> 
-                      force loop 
-                        (Tuple reds whites ([hole: list] blues (Cons y hole)))
-                        ys)) ;; 
+    match xs with
+      | Nil -> return (reds (whites (blues Nil)))
+      | Cons y ys -> 
+         (match y with 
+            | Red i -> 
+                force loop ([hole: list] reds (Cons y hole)) whites blues ys
+            | White i ->  
+                force loop reds ([hole: list] whites (Cons y hole)) blues ys
+            | Blue i -> 
+                force loop reds whites ([hole: list] blues (Cons y hole)) ys)
+;;
 
-let dutch = thunk fun xs : list -> 
-  force dutch' (Tuple ([x: list] x) ([x: list] x) ([x: list] x)) xs
+val dutch = thunk fun xs : list -> 
+  force dutch' ([x: list] x) ([x: list] x) ([x: list] x) xs ;;
 
 force dutch 
   (Cons (White 4) 
