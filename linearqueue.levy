@@ -3,7 +3,7 @@
 # A queue here is a (q -o q), where the type "q" has one constructor. Notice
 # that there are no inhabitants of type q, just inhabitants of (q -o q).
 
-data Cons: int -o q -o q ;;
+data QCons: int -o q -o q ;;
 
 data None: option
    | Some: int -o (q -o q) -o option ;; 
@@ -11,12 +11,12 @@ data None: option
 val new = thunk return [x:q] x ;;
 
 val push = thunk fun i: int -> fun queue: (q -o q) -> 
-  return [x:q] queue (Cons i x) ;;
+  return [x:q] queue (QCons i x) ;;
 
 val pop = thunk fun queue: (q -o q) ->
   match queue with
     | [x:q] x -> return None
-    | [x:q] Cons i (queue' x) -> return Some i queue' 
+    | [x:q] QCons i (queue' x) -> return Some i queue' 
 
 val getq = thunk fun o: option -> 
   let (Some _ q) be o in return q ;; 
