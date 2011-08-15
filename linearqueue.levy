@@ -18,10 +18,10 @@ val push = thunk
 val pop = thunk fun queue: (q -o q) ->
   match queue with
     | [x:q] x -> return None
-    | [x:q] QCons i (queue' x) -> return Some i queue' 
+    | [x:q] QCons i (queue' x) -> return Some i queue' ;; 
 
-val getq = thunk fun o: option -> 
-  let (Some _ q) be o in return q ;; 
+val getq = thunk fun opt: option -> 
+  let (Some _ q) be opt in return q ;; 
 
 # Usage:
 
