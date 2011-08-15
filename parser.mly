@@ -108,6 +108,7 @@
 %token RETURN THUNK FORCE
 %token QUIT
 %token USE
+%token SUBORD
 %token <string>STRING
 %token COMMA
 %token CARAT
@@ -119,7 +120,8 @@
 %type <Syntax.toplevel_cmd list> toplevel
 
 %right PIPE
-%right ARROW FUN REC RBRACK
+%right ARROW FUN REC 
+%right RBRACK
 %right TO LET DO
 %nonassoc IF THEN ELSE
 %right THUNK RETURN
@@ -160,6 +162,7 @@ datatop:
 
 cmd:
   | USE STRING                  { Use $2 }
+  | SUBORD                      { Subord }
   | QUIT                        { Quit }
 
 def: 

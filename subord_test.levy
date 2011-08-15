@@ -1,0 +1,10 @@
+# Testing subordination informaiton 
+
+data Arrow: tp -o tp -o tp
+   | Num: tp ;;
+
+data Lam: tp -o (tm -o tm) -o tm
+   | App: tm -o tm -o tm
+   | Int: int -o tm ;;
+
+$subord ;;

@@ -63,6 +63,7 @@ type toplevel_cmd =
   | Use of string                 (** load a file [$use "<filename>"] *)
   | Data of (name * ltype) list   (** datatype declaration [data ...] *)
   | Quit                          (** exit toplevel [$quit] *)
+  | Subord                        (** print subordination [$subord] *)
 
 (** Conversion from a type to a string *)
 let string_of_type ty =
@@ -139,3 +140,26 @@ let rec subst s = function
   | Rec (x, ty, e) -> let s' = List.remove_assoc x s in Rec (x, ty, subst s' e)
 
 and subst_case s (pat, e) = (pat, subst (remove_assocs s [ pat ]) e)
+
+(** [mapbut f g xs n] is the same as [List.map f xs] if [n] is [None]. 
+    If [n] is [Some i], then the function [f] is applied to every element of 
+    the list except for the [i]th one; [g] is applied to the [i]th argument *)
+let rec mapbut f g xs arg =
+  match xs with 
+    | [] -> []
+    | x :: xs -> 
+        (match arg with 
+           | None -> f x :: mapbut f g xs None
+           | Some 0 -> g x :: mapbut f g xs None
+           | Some n -> f x :: mapbut f g xs (Some (n-1)))
+
+let rec mapbut2 f g xs ys arg = 
+  match xs, ys with 
+    | [], [] -> []   
+    | x :: xs, y :: ys -> 
+        (match arg with 
+           | None -> f x y :: mapbut2 f g xs ys None
+           | Some 0 -> g x y :: mapbut2 f g xs ys None
+           | Some n -> f x y :: mapbut2 f g xs ys (Some (n-1)))
+    | _ -> raise (Invalid_argument "mapbut2")
+

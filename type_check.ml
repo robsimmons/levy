@@ -6,6 +6,7 @@ module MapS =
   Map.Make(struct type t = string let compare = String.compare end)
 let consTable: (name, (vtype list * name)) Hashtbl.t = Hashtbl.create 5
 let dataTable: (name, (vtype list) MapS.t) Hashtbl.t = Hashtbl.create 5
+let subord: Closure.graph = Closure.new_graph ()
 
 (** Exception indicating a type-checking error. *)
 exception Type_error of string
@@ -49,6 +50,23 @@ let rec unfold_lolli collected = function
   | VLolli (ty1, ty2) -> check_vtype ty1 ; unfold_lolli (ty1 :: collected) ty2
   | ty -> type_error (string_of_type ty ^ " is not a valid constructed type")
 
+(** [get_subord data] remembers all the subordination information from a 
+    single data data declarations [data] *)
+let get_subord data = 
+  let rec mapper ty = 
+    match ty with 
+      | VConst a -> a
+      | VLolli (VConst b, ty) -> 
+          let a = mapper ty in
+          Closure.add_edge subord (b, a) ; a 
+      | VLolli (VInt, ty) -> 
+          let a = mapper ty in
+          Closure.add_edge subord ("int", a) ; a           
+      | VLolli (VLolli _, ty) -> 
+          mapper ty (* "No overlapping lambdas" thing is our friend here *) 
+      | _ -> type_error ("internal: chk_data should have prevented this") in
+  ignore (List.map (fun (_, ty) -> mapper ty) data)
+
 (** [chk_data to_add data] is a tail recursive function that collects data
     in the map [to_add], checking that a set of datatype declarations are 
     kosher. May not be exactly right. *)
@@ -58,8 +76,7 @@ let rec chk_data (to_add: vtype list MapS.t MapS.t) = function
       ignore (MapS.mapi (function a -> function constructors -> 
         Hashtbl.add dataTable a constructors ;
         ignore (MapS.mapi (function c -> function tys -> 
-          Hashtbl.add consTable c (tys, a)) constructors)) to_add) 
-  
+          Hashtbl.add consTable c (tys, a)) constructors)) to_add)   
   | (c, ty) :: data -> 
     (* Check for duplicate constructor declarations *)
       if Hashtbl.mem consTable c 
@@ -80,14 +97,25 @@ let rec chk_data (to_add: vtype list MapS.t MapS.t) = function
 
 (** [check_data data] checkes the well-formedness of the data declarations 
     [data] and loads information into the global tables *)
-let check_data = chk_data MapS.empty
+let check_data data = (chk_data MapS.empty data ; get_subord data)
 let () = check_data [ ("true", VConst "bool") ; ("false", VConst "bool") ]
 
-(** [pat_ty ty pat] checks that the pattern [pat] is a valid pattern of type
-    [ty] and generates the extended context produced by that pattern. *)
-let rec pat_ty ty = function
-  | Var x -> [ (x, ty) ]
-  | Const (c, pats, _) -> 
+(** [pat_ty lctx ty pat] checks that the pattern [pat] is a valid pattern of 
+    type [ty] (possibly with the linear variable in lctx free) and generates 
+    the extended context produced by that pattern. 
+    Assumes that conditions for the linear occurance of variables are already
+    met. *)
+let rec pat_ty lctx ty = function
+  | Var x -> 
+      (match lctx with
+         | None -> [ (x, ty) ]
+         | Some (lx, lty) -> 
+             if x <> lx then type_error "Parser invariant violated (1)." ;
+             if lty <> ty 
+             then type_error ("Linear variable " ^ x ^ " not of type " ^
+                              string_of_type ty) ; 
+             [])
+  | Const (c, pats, lpos) -> 
       let (tys, a) = check_cons c in
       if List.length tys <> List.length pats
       then 
@@ -97,11 +125,31 @@ let rec pat_ty ty = function
       if ty <> VConst a then
         type_error 
           ("constructor " ^ c ^ " not of type " ^ string_of_type ty) ;
-      List.concat (List.map2 pat_ty tys pats)
+      List.concat (mapbut2 (pat_ty None) (pat_ty lctx) tys pats lpos)
   | Int _ ->
-      if ty = VInt then [] else 
+      if lctx <> None then type_error "Parser invariant violated (2)." ;
+      if ty <> VInt 
+      then 
         type_error 
-          ("integer constant not is not of type " ^ string_of_type ty)
+          ("integer constant not is not of type " ^ string_of_type ty) ;
+      []
+  | Apply (Var x, Var y) ->
+      (match lctx with
+         | None -> type_error "Parser invariant violated (3)."
+         | Some (lx, lty) -> 
+             if y <> lx then type_error "Parser invariant violated (4)." ;
+             [ (x, VLolli (lty, ty)) ])
+  | Lin (lx, lty, pat) ->
+      if lctx <> None then type_error "Parser invariant violated (5)." ; 
+      (match ty with 
+         | VLolli (ty1, ty2) -> 
+             if ty1 <> lty then 
+               type_error
+                 ("annotation type (" ^ string_of_type lty ^ " -o ?)" ^
+                  " doesn't agree with argument (" ^ string_of_type ty ^ ")") ; 
+             pat_ty (Some (lx, lty)) ty2 pat 
+         | _ -> 
+             type_error ("Type " ^ string_of_type ty ^ " not a linear lambda"))
   | pat -> type_error (string_of_expr pat ^ " not a valid pattern")
 
 (** [check ctx ty e] checks that expression [e] has type [ty] in context [ctx].
@@ -122,12 +170,12 @@ and type_of_cases ctx ty = function
       | Some ty -> check_ctype ty ; ty)
   | (pat, e) :: cases -> (function
     | None -> 
-        let patctx = pat_ty ty pat in
+        let patctx = pat_ty None ty pat in
         let wipe = List.fold_left (fun ctx (x, _) -> List.remove_assoc x ctx) in
         let tyc = type_of (patctx @ wipe ctx patctx) [] e in
           type_of_cases ctx ty cases (Some tyc) 
     | Some tyc -> 
-        let patctx = pat_ty ty pat in
+        let patctx = pat_ty None ty pat in
         let wipe = List.fold_left (fun ctx (x, _) -> List.remove_assoc x ctx) in
         check (patctx @ wipe ctx patctx) [] tyc e ;
         type_of_cases ctx ty cases (Some tyc))
