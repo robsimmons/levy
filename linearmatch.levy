@@ -35,53 +35,26 @@ val caseint = thunk fun x: (int -o pair) ->
     | [hole: int] Pair blist (list hole) -> return 0 ;;
 
 
-# Turn a (tree -o tree) into a Huet-style tree zipper
+# Matching lets us duplicate lists
 
-data Leaf: tree 
-   | Node: tree -o tree -o tree ;;
+data LinPair: (list -o list) -o (list -o list) -o linpair ;; 
 
-data Top: path 
-   | Left: path -o tree -o path
-   | Right: tree -o path -o path ;;
+val dup = thunk rec dup: (list -o list) -> F linpair is
+  fun dxs: (list -o list) ->
+    match dxs with 
+      | [hole: list] hole -> 
+          return LinPair 
+            ([hole: list] hole)
+            ([hole: list] hole)
+      | [hole: list] Cons i (dxs' hole) ->
+          force dup dxs' to pair in
+          let (LinPair dxs1 dxs2) be pair in
+          return LinPair
+            ([hole: list] Cons i (dxs1 hole))
+            ([hole: list] Cons i (dxs2 hole)) ;;
 
-val enzip = thunk rec enzip: (tree -o tree) -> path -> F path is 
-  fun dt: (tree -o tree) -> fun outside: path -> 
-    match dt with
-      | [hole: tree] hole -> 
-          return outside
-      | [hole: tree] Node (left hole) right -> 
-          force enzip left (Left outside right)
-      | [hole: tree] Node left (right hole) ->  
-          force enzip right (Right left outside) ;;
-
-force enzip ([hole: tree]
-  Node
-   (Node 
-    (Node Leaf hole) 
-    (Node Leaf Leaf))
-   (Node 
-    (Node Leaf Leaf) 
-    (Node Leaf Leaf))) 
-  Top ;;
-
-force enzip ([hole: tree]
-  Node
-   (Node 
-    (Node Leaf Leaf) 
-    (Node Leaf Leaf))
-   (Node 
-    (Node Leaf hole) 
-    (Node Leaf Leaf))) 
-  Top ;;
-
-force enzip ([hole: tree]
-  Node
-   (Node 
-    (Node Leaf Leaf) 
-    (Node hole Leaf))
-   (Node 
-    (Node hole Leaf) 
-    (Node Leaf Leaf))) 
-  Top ;;
-
-$subord ;; 
+comp pair = force dup ([hole: list] Cons 2 (Cons 3 (Cons 4 (Cons 5 hole)))) ;;
+comp dxs1 = let (LinPair dxs1 _) be pair in return dxs1 ;;
+comp dxs2 = let (LinPair _ dxs2) be pair in return dxs2 ;;
+dxs1 (Cons 100 Nil) ;;
+dxs2 (Cons 200 Nil) ;;

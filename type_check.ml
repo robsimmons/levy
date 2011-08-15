@@ -47,6 +47,9 @@ let check_cons c =
     all the right-nested implications in the type ty to get at the head type *)
 let rec unfold_lolli collected = function
   | VConst a -> (List.rev collected, a)
+  | VLolli (VForget _ as ty1, _) -> 
+      type_error ("computational type " ^ string_of_type ty1 ^
+                  " not allowed in data")
   | VLolli (ty1, ty2) -> check_vtype ty1 ; unfold_lolli (ty1 :: collected) ty2
   | ty -> type_error (string_of_type ty ^ " is not a valid constructed type")
 

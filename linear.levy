@@ -29,6 +29,10 @@ val z6 = [x: list] z5 (Cons 1 x) ;;
 val z7 = [x: list] z6 (Cons 2 x) ;;
 val z8 = [x: list] z7 (Cons 3 x) ;;
 val z9 = [x: list] z8 (Cons 4 x) ;;
+val zA = [x: list] Cons 0 (z9 x) ;;
+val zB = [x: list] Cons 4 (zA x) ;;
+val zC = [x: list] Cons 4 (zB x) ;;
+val l3 = zC (Cons 5 Nil) ;;
 
 
 # We can quickly (constant time) turn difference lists into lists, but turning 
@@ -48,16 +52,15 @@ force makediff l2 ;;
 # The inside of a linear function must be a value, and the distinguished 
 # variable must appear exactly once *within the term*.
 
-data Pair: U (int -> F int) -o int -o int -o pair ;;
+data Pair: int -o int -o pair ;;
 
 # This is fine:
-[x: int] Pair (thunk fun y: int -> return y + 5) x 4 ;;
+[x: int] Pair x 4 ;;
 
 # These would lead to syntax errors:
-# [x: int] Pair (thunk fun y: int -> return y + 5) 5 4 ;; # Syntax error
-# [x: int] Pair (thunk fun y: int -> return y + x) 5 4 ;; # Syntax error
-# [x: int] Pair (thunk fun y: int -> return y + x) x 4 ;; # Type error
-# [x: int] Pair (thunk fun y: int -> return y + x) x x ;; # Syntax error
+# [x: int] Pair 5 4 ;;
+# [x: int] Pair 5 4 ;;
+# [x: int] Pair x x ;;
 
 
 # Zippers must be used with an affine discipline due to the fact that they
