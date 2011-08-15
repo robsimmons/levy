@@ -58,10 +58,10 @@ let get_subord data =
       | VConst a -> a
       | VLolli (VConst b, ty) -> 
           let a = mapper ty in
-          Closure.add_edge subord (b, a) ; a 
+          Closure.add_edge subord (a, b) ; a 
       | VLolli (VInt, ty) -> 
           let a = mapper ty in
-          Closure.add_edge subord ("int", a) ; a           
+          Closure.add_edge subord (a, "int") ; a           
       | VLolli (VLolli _, ty) -> 
           mapper ty (* "No overlapping lambdas" thing is our friend here *) 
       | _ -> type_error ("internal: chk_data should have prevented this") in

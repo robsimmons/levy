@@ -61,7 +61,7 @@ let rec exec_cmd n (ctx, env) = function
   | Subord -> 
       print_endline "Subordination for current datatypes:" ;
       Closure.iter_paths
-        (fun s t -> print_endline (s ^ " <| " ^ t))
+        (fun s t -> print_endline (t ^ " <| " ^ s))
         Type_check.subord ;
       (ctx, env)
 

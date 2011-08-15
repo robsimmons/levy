@@ -9,7 +9,7 @@ and runtime = heapdata ref
 and heapdata = 
   | Null 
   | Boxed of int
-  | Tagged of name * runtime list
+  | Tagged of name * runtime list * int option
   | Thunked of environment * expr
   | Closed of environment * name * expr
   | Zipped of zipper ref
@@ -22,8 +22,8 @@ exception Runtime_error of string
 
 let runtime_error msg = raise (Runtime_error ("Runtime error: " ^ msg))
 
-let vtrue = ref (Tagged ("true", []))
-let vfalse = ref (Tagged ("false", []))
+let vtrue = ref (Tagged ("true", [], None))
+let vfalse = ref (Tagged ("false", [], None))
 let mkbool = function
   | true -> vtrue
   | false -> vfalse
@@ -35,7 +35,7 @@ let match_failure = function
 let rec string_of_runtime: runtime -> string = function
   | { contents = Null } -> "[]"
   | { contents = Boxed k } -> string_of_int k
-  | { contents = Tagged (x, vs) } -> 
+  | { contents = Tagged (x, vs, _) } -> 
       if List.length vs = 0 then x 
       else "(" ^ x ^ " " ^ 
            String.concat " " (List.map string_of_runtime vs) ^ ")"
@@ -43,7 +43,7 @@ let rec string_of_runtime: runtime -> string = function
   | { contents = Closed _ } -> "<fun>" 
   | { contents = Zipped { contents = Invalid } } -> "<used zipper>"
   | { contents = Zipped { contents = Zipper (r, _) } } -> 
-    "<zipper> " ^ string_of_runtime r
+    "(<zipper> " ^ string_of_runtime r ^ ")"
 
 let bindpat = function
   | Var x -> fun v -> (x, v)
@@ -56,7 +56,7 @@ let rec interp env = function
        with
 	   Not_found -> runtime_error ("Unknown variable " ^ x))
   | Int k -> ref (Boxed k)
-  | Const (c, vs, None) -> ref (Tagged (c, List.map (interp env) vs))
+  | Const (c, vs, None) -> ref (Tagged (c, List.map (interp env) vs, None))
   | Const (c, vs, Some n) -> runtime_error "Not supposed to be a hole here"
   | Lin (x, ty, v) -> 
       let (r1, r2) = interp_lin env x v in
@@ -89,7 +89,15 @@ let rec interp env = function
   | Case (e, pats) -> 
       (match (interp env e) with 
          | { contents = Boxed i } -> match_int env i pats
-         | { contents = Tagged (c, vs) } -> match_struct env (c, vs) pats
+         | { contents = Tagged (c, vs, _) } -> match_struct env (c, vs) pats
+         | { contents = Zipped { contents = Invalid } } -> 
+           runtime_error "Zipper reused more than once"
+         | { contents = Zipped ({ contents = 
+               Zipper ({ contents = Null }, hole) } as r) } -> 
+           r := Invalid ; match_linear_id env pats
+         | { contents = Zipped ({ contents = 
+               Zipper ({ contents = Tagged (c, vs, Some n) }, hole) } as r) }->
+           r := Invalid ; match_linear env (c, vs, n, hole) pats
          | v -> match_whatever env v pats)
   | Apply (e1, e2) ->
       (match (interp env e1), (interp env e2) with
@@ -127,7 +135,7 @@ and interp_lin env y = function
               let (vs, hole) = interp_lins (n - 1) vs in 
               (interp env v :: vs, hole) in
       let (vs, hole) = interp_lins n vs in
-      (ref (Tagged (c, vs)), hole)
+      (ref (Tagged (c, vs, Some n)), hole)
   | Apply (v1, v2) ->
       (match (interp env v1), (interp_lin env y v2) with
          | { contents = Zipped ({ contents = Zipper (v1, old_hole) } as r) }, 
@@ -145,11 +153,37 @@ and match_int env i = function
   | pats -> match_failure pats
 
 and match_struct env (c, vs) = function
-  | (Var x, e) :: _ -> interp ((x, ref (Tagged (c, vs))) :: env) e
+  | (Var x, e) :: _ -> interp ((x, ref (Tagged (c, vs, None))) :: env) e
   | (Const (c', vars, None), e) :: pats ->
       if c = c' 
       then interp (List.map2 bindpat vars vs @ env) e 
       else match_struct env (c, vs) pats
+  | pats -> match_failure pats
+
+and match_linear_id env = function
+  | ((Var x, e) :: _ | (Lin (_, _, Apply (Var x, Var _)), e) :: _) -> 
+      let r = ref Null in 
+      interp ((x, ref (Zipped (ref (Zipper (r, r))))) :: env) e
+  | (Lin (_, _, Var x), e) :: _ -> interp env e
+  | (Lin (_, _, Const (_, _, _)), _) :: pats -> match_linear_id env pats
+  | pats -> match_failure pats
+
+and match_linear env (c, vs, n, hole) = function
+  | ((Var x, e) :: _ | (Lin (_, _, Apply (Var x, Var _)), e) :: _) ->
+      let z = ref (Zipper (ref (Tagged (c, vs, Some n)), hole)) in 
+      interp ((x, ref (Zipped z)) :: env) e
+  | (Lin (_, _, Var _), _) :: pats -> match_linear env (c, vs, n, hole) pats
+  | (Lin (_, _, Const (c', vars, Some m)), e) :: pats -> 
+      let bindpat_lin = function
+        (* Optimized case: known to be a match *)
+        | Var x -> fun v -> ("_", v) 
+        (* Common case: bind a new zipper *)
+        | Apply (Var x, Var _) -> fun v -> 
+            (x, ref (Zipped (ref (Zipper (v, hole)))))
+        | _ -> runtime_error "Multiple-depth pattern matching" in
+      if c = c' && n = m
+      then interp (mapbut2 bindpat bindpat_lin vars vs (Some m) @ env) e
+      else match_linear env (c, vs, n, hole) pats 
   | pats -> match_failure pats
 
 and match_whatever env v = function
