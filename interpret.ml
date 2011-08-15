@@ -58,6 +58,8 @@ let rec interp env = function
   | Int k -> ref (Boxed k)
   | Const (c, vs, None) -> ref (Tagged (c, List.map (interp env) vs, None))
   | Const (c, vs, Some n) -> runtime_error "Not supposed to be a hole here"
+  (* Actually executing the eta expansion messes with invariants *)
+  | Lin (x, ty, Apply (Var v, Var y)) -> interp env (Var v) 
   | Lin (x, ty, v) -> 
       let (r1, r2) = interp_lin env x v in
       ref (Zipped (ref (Zipper (r1, r2))))

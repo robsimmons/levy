@@ -25,16 +25,16 @@ let add_edge ((bwdedges, fwdpaths): graph) ((s, t): edge) =
 
   (* Filter; we only want to add to the path queue non-extant paths *)
   let fwdmem (s, t) = 
-    print_string ("fwdmem(" ^ s ^ ", " ^ t ^ ")... ") ;
+    (* print_string ("fwdmem(" ^ s ^ ", " ^ t ^ ")... ") ; *)
     if not (Hashtbl.mem fwdpaths s)
-    then (print_endline (s ^ " not in paths") ;
+    then ((* print_endline (s ^ " not in paths") ; *)
           Hashtbl.add fwdpaths s (SetS.singleton t) ;
           [ (s, t) ])
     else if SetS.mem t (Hashtbl.find fwdpaths s)
-    then (print_endline ("duplicate") ;  
+    then ((* print_endline ("duplicate") ; *)
           [])
     else (let nexts = Hashtbl.find fwdpaths s in
-          print_endline (t ^ " not in successors") ;
+          (* print_endline (t ^ " not in successors") ; *)
           Hashtbl.remove fwdpaths s ; 
           Hashtbl.add fwdpaths s (SetS.add t nexts) ;
           [ (s, t) ]) in
