@@ -8,8 +8,6 @@
     | Cases of (expr * expr) list  (* Syntax known to be a case expression *)
     | Arrowey of (syntax * syntax) (* Arrows are particularly ambiguous *)
 
-  exception Syntax_error of string
-
   (** [syntax_error msg] raises exception [Syntax_error msg]. *)
   let syntax_error msg = raise (Syntax_error ("Parse error: " ^ msg))
 

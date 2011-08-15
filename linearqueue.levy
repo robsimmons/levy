@@ -1,0 +1,48 @@
+# Queues with linearity and matching
+
+# A queue here is a (q -o q), where the type "q" has one constructor. Notice
+# that there are no inhabitants of type q, just inhabitants of (q -o q).
+
+data Cons: int -o q -o q ;;
+
+data None: option
+   | Some: int -o (q -o q) -o option ;; 
+
+val new = thunk return [x:q] x ;;
+
+val push = thunk fun i: int -> fun queue: (q -o q) -> 
+  return [x:q] queue (Cons i x) ;;
+
+val pop = thunk fun queue: (q -o q) ->
+  match queue with
+    | [x:q] x -> return None
+    | [x:q] Cons i (queue' x) -> return Some i queue' 
+
+val getq = thunk fun o: option -> 
+  let (Some _ q) be o in return q ;; 
+
+# Usage:
+
+comp q = force new ;;
+
+comp q = force push 3 q ;;
+
+comp p = force pop q ;;
+comp q = force getq p ;;
+
+comp q = force push 6 q ;;
+
+comp q = force push 9 q ;;
+
+comp p = force pop q ;;
+comp q = force getq p ;;
+
+comp q = force push 4 q ;;
+
+comp p = force pop q ;;
+comp q = force getq p ;;
+
+comp p = force pop q ;;
+comp q = force getq p ;;
+
+comp q = force pop q ;;

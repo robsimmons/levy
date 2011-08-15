@@ -1,0 +1,87 @@
+# Demonstration of linear matching
+
+data Nil: list
+   | Cons: int -o list -o list ;;
+
+
+# Discard the list up to the point where the int-holding hole was
+val run = thunk rec run: (int -o list) -> F list is fun x: (int -o list) ->
+  match x with
+    | [hole: int] Cons hole l -> return l 
+    | [hole: int] Cons i (dx hole) -> force run dx ;; 
+
+force run ([hole: int] Cons hole Nil) ;; 
+force run ([hole: int] Cons hole (Cons 3 (Cons 4 (Cons 5 (Cons 6 Nil))))) ;; 
+force run ([hole: int] Cons 2 (Cons hole (Cons 4 (Cons 5 (Cons 6 Nil))))) ;; 
+force run ([hole: int] Cons 2 (Cons 3 (Cons hole (Cons 5 (Cons 6 Nil))))) ;; 
+force run ([hole: int] Cons 2 (Cons 3 (Cons 4 (Cons hole (Cons 6 Nil))))) ;; 
+force run ([hole: int] Cons 2 (Cons 3 (Cons 4 (Cons 5 (Cons hole Nil))))) ;; 
+
+
+# Demonstrates how coverage checking understands the difference between a list
+# containing bools and a tree containing ints
+
+data Bnil: blist
+   | Bcons: bool -o blist -o blist ;;
+
+data Pair: blist -o list -o pair ;;
+
+val casebool = thunk fun x: (bool -o pair) ->
+  match x with 
+    | [hole: bool] Pair (blist hole) list -> return 0 ;;
+
+val caseint = thunk fun x: (int -o pair) ->
+  match x with 
+    | [hole: int] Pair blist (list hole) -> return 0 ;;
+
+
+# Turn a (tree -o tree) into a Huet-style tree zipper
+
+data Leaf: tree 
+   | Node: tree -o tree -o tree ;;
+
+data Top: path 
+   | Left: path -o tree -o path
+   | Right: tree -o path -o path ;;
+
+val enzip = thunk rec enzip: (tree -o tree) -> path -> F path is 
+  fun dt: (tree -o tree) -> fun outside: path -> 
+    match dt with
+      | [hole: tree] hole -> 
+          return outside
+      | [hole: tree] Node (left hole) right -> 
+          force enzip left (Left outside right)
+      | [hole: tree] Node left (right hole) ->  
+          force enzip right (Right left outside) ;;
+
+force enzip ([hole: tree]
+  Node
+   (Node 
+    (Node Leaf hole) 
+    (Node Leaf Leaf))
+   (Node 
+    (Node Leaf Leaf) 
+    (Node Leaf Leaf))) 
+  Top ;;
+
+force enzip ([hole: tree]
+  Node
+   (Node 
+    (Node Leaf Leaf) 
+    (Node Leaf Leaf))
+   (Node 
+    (Node Leaf hole) 
+    (Node Leaf Leaf))) 
+  Top ;;
+
+force enzip ([hole: tree]
+  Node
+   (Node 
+    (Node Leaf Leaf) 
+    (Node hole Leaf))
+   (Node 
+    (Node hole Leaf) 
+    (Node Leaf Leaf))) 
+  Top ;;
+
+$subord ;; 

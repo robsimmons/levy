@@ -141,6 +141,9 @@ let rec subst s = function
 
 and subst_case s (pat, e) = (pat, subst (remove_assocs s [ pat ]) e)
 
+(** Captures parsing errors *)
+exception Syntax_error of string
+
 (** [mapbut f g xs n] is the same as [List.map f xs] if [n] is [None]. 
     If [n] is [Some i], then the function [f] is applied to every element of 
     the list except for the [i]th one; [g] is applied to the [i]th argument *)

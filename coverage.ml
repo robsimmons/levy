@@ -86,18 +86,25 @@ let rec cover_linear goals = function
       then print_endline "WARNING: duplicate cases matching the identity" ;
       cover_linear (MapS.remove "id" goals) pats
   | (Lin (x, ty, Const (c, pats', Some n)), _) :: pats ->
+      (* print_endline ("Pattern: constructor " ^ c ^ ", position " 
+       *                ^ string_of_int n) ; 
+       * print_endline ("Remaining goals: ") ; 
+       * MapS.fold (fun c set () -> 
+       *   print_string ("Constructor " ^ c ^ ", position(s) ") ;
+       *   SetI.fold (fun n () -> print_int n; print_string " ") set () ;
+       *   print_endline "") goals () ; *)
       if not (SetI.mem n (MapS.find c goals)) then duplicate_error c ;
       let pats'' = 
         mapbut 
           (fun pat -> pat) 
           (function 
              | Var x -> 
-                 if not (Closure.is_final subord (string_of_lambdaty ty)) 
-                 then type_error ("Depth-1 pattern matching only: " ^
+                 if Closure.is_final subord (string_of_lambdaty ty) 
+                 then Var "_"
+                 else type_error ("Depth-1 pattern matching only: " ^
                                   "finding " ^ x ^ " in position " ^ 
                                   string_of_int n ^ " of constructor " ^
                                   c ^ " counts.")
-                 else Var "_"
              | Apply (Var y, Var x) -> Var y
              | e -> 
                  type_error (string_of_expr e ^ " not allowed in linear " ^
@@ -118,17 +125,18 @@ let coverage_goals lty ty =
                     | VInt -> "int" 
                     | VConst a -> a
                     | _ -> "" in
-      if Closure.check_path subord (argty, lty) 
-      then (print_endline (c ^ " w/ position " ^ string_of_int n) ; 
-           (n+1, SetI.add n set))
+      if argty = lty || Closure.check_path subord (argty, lty) 
+      then (n+1, SetI.add n set)
       else (n+1, set) in
     let (_, goalset) = 
-      List.fold_left folder (0, SetI.empty) (fst (Hashtbl.find consTable c)) in
+      List.fold_left folder (0, SetI.empty)
+        (fst (Hashtbl.find consTable c)) in
     MapS.add c goalset goalmap in
 
-  MapS.fold const_args 
-    (Hashtbl.find dataTable lty) 
-    (MapS.singleton "id" SetI.empty)
+  let starting_map = 
+    if ty = lty then (MapS.singleton "id" SetI.empty) else MapS.empty in
+
+  MapS.fold const_args (Hashtbl.find dataTable ty) starting_map
   
 
 let check_simple_coverage = function

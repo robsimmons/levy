@@ -13,7 +13,8 @@ let new_graph (): graph = (Hashtbl.create 5, Hashtbl.create 5)
 let check_path ((bwdedges, fwdpaths): graph) ((s, t): edge) = 
   Hashtbl.mem fwdpaths s && SetS.mem t (Hashtbl.find fwdpaths s)
 
-let is_final ((_, fwdpaths): graph) = Hashtbl.mem fwdpaths
+let is_final ((_, fwdpaths): graph) s = 
+  not (Hashtbl.mem fwdpaths s) || SetS.is_empty (Hashtbl.find fwdpaths s)
 
 let iter_paths f ((_, fwdpaths): graph) = 
   Hashtbl.iter 
@@ -49,7 +50,7 @@ let add_edge ((bwdedges, fwdpaths): graph) ((s, t): edge) =
   let rec paths = function
     | [] -> ()
     | (t, u) :: es -> 
-        print_endline ("Dequeing " ^ t ^ ", " ^ u) ; 
+        (* print_endline ("Dequeing " ^ t ^ ", " ^ u) ;  *)
         paths (SetS.fold (fun s es -> fwdmem (s, u) @ es) (prevs t) es) in
 
   if not (Hashtbl.mem bwdedges t)

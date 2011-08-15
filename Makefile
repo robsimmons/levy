@@ -8,7 +8,7 @@ SOURCES = \
 	parser.mly \
 	levy.ml
 
-OCAMLBUILD=ocamlbuild
+OCAMLBUILD=ocamlbuild 
 CAML2HTML=caml2html
 OCAMLDOC=ocamldoc
 

@@ -146,5 +146,6 @@ let main =
 	List.fold_left (exec_file !print_depth) ([],[]) !files
       with
 	  Fatal_error msg -> Message.report msg ; exit 1
+        | Syntax.Syntax_error msg -> Message.report msg ; exit 1
     in    
       if not !noninteractive then shell !print_depth ctx env
