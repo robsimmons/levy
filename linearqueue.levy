@@ -10,8 +10,10 @@ data None: option
 
 val new = thunk return [x:q] x ;;
 
-val push = thunk fun i: int -> fun queue: (q -o q) -> 
-  return [x:q] queue (QCons i x) ;;
+val push = thunk 
+  fun i: int -> 
+  fun queue: (q -o q) -> 
+    return [x:q] queue (QCons i x) ;;
 
 val pop = thunk fun queue: (q -o q) ->
   match queue with
@@ -24,25 +26,18 @@ val getq = thunk fun o: option ->
 # Usage:
 
 comp q = force new ;;
-
 comp q = force push 3 q ;;
-
-comp p = force pop q ;;
-comp q = force getq p ;;
-
-comp q = force push 6 q ;;
-
+comp q = force pop q to p in force getq p ;;
+comp q = force push 8 q ;;
 comp q = force push 9 q ;;
-
-comp p = force pop q ;;
-comp q = force getq p ;;
-
+comp q = force push 12 q ;;
+comp q = force pop q to p in force getq p ;;
 comp q = force push 4 q ;;
-
-comp p = force pop q ;;
-comp q = force getq p ;;
-
-comp p = force pop q ;;
-comp q = force getq p ;;
-
+comp q = force pop q to p in force getq p ;;
+comp q = force push 5 q ;;
+comp q = force pop q to p in force getq p ;;
+comp q = force push 6 q ;;
+comp q = force pop q to p in force getq p ;;
+comp q = force pop q to p in force getq p ;;
+comp q = force pop q to p in force getq p ;;
 comp q = force pop q ;;
