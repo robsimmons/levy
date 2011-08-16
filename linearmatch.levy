@@ -5,10 +5,11 @@ data Nil: list
 
 
 # Discard the list up to the point where the int-holding hole was
-val run = thunk rec run: (int -o list) -> F list is fun x: (int -o list) ->
-  match x with
-    | [hole: int] Cons hole l -> return l 
-    | [hole: int] Cons i (dx hole) -> force run dx ;; 
+val run = thunk rec run: (int -o list) -> F list is
+  fun x: (int -o list) ->
+    match x with
+      | [hole: int] Cons hole l -> return l 
+      | [hole: int] Cons i (dx hole) -> force run dx ;; 
 
 force run ([hole: int] Cons hole Nil) ;; 
 force run ([hole: int] Cons hole (Cons 3 (Cons 4 (Cons 5 (Cons 6 Nil))))) ;; 
