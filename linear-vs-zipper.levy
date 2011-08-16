@@ -1,4 +1,4 @@
-# Turn a (tree -o tree) into a Huet-style tree zipper
+# Turn a (tree -o tree) into a Huet-style tree zipper, and vice-versa
 
 data Leaf: int -o tree 
    | Node: tree -o tree -o tree ;;
@@ -19,6 +19,17 @@ val zip_of_lin = thunk rec enzip: path -> (tree -o tree) -> F path is
           force enzip (Left outside right) left
       | [hole: tree] Node left (right hole) ->  
           force enzip (Right left outside) right ;;
+
+#  val zip_of_lin' = thunk rec enzip: (tree -o tree) -> F path is 
+#    fun lin: (tree -o tree) -> 
+#      match lin with
+#        | [hole: tree] hole -> Top
+#        | [hole: tree] lin' (Node hole right) -> 
+#            force enzip lin' to path in
+#            return Left path right
+#        | [hole: tree] lin' (Node left hole) ->
+#            force enzip lin' to path in
+#            return Right left path ;;
 
 val lin_of_zip = thunk rec enlin: path -> (tree -o tree) -> F (tree -o tree) is 
   fun outside: path ->
