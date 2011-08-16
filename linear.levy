@@ -30,24 +30,26 @@ val z7 = [x: list] z6 (Cons 2 x) ;;
 val z8 = [x: list] z7 (Cons 3 x) ;;
 val z9 = [x: list] z8 (Cons 4 x) ;;
 val zA = [x: list] Cons 0 (z9 x) ;;
-val zB = [x: list] Cons 4 (zA x) ;;
-val zC = [x: list] Cons 4 (zB x) ;;
+val zB = [x: list] Cons (-1) (zA x) ;;
+val zC = [x: list] Cons (-2) (zB x) ;;
 val l3 = zC (Cons 5 Nil) ;;
 
 
 # We can quickly (constant time) turn difference lists into lists, but turning 
 # lists into difference lists is an O(n) operation that iterates over the list.
 
-val makediff = thunk rec loop : (list -> F (list -o list)) is fun xs : list ->
-  match xs with
-    | Nil -> return [hole: list] hole
-    | Cons x xs -> 
-      force loop xs to dxs in 
-      return [hole: list] Cons x (dxs hole) ;; 
+val makediff = thunk rec loop : list -> F (list -o list) is 
+  fun xs : list ->
+    match xs with
+      | Nil -> return [hole: list] hole
+      | Cons x xs -> 
+        force loop xs to dxs in 
+        return [hole: list] Cons x (dxs hole) ;; 
 
-force makediff l1 ;;
-force makediff l2 ;;
-
+comp z = force makediff l1 ;;
+z (Cons 100 Nil) ;; 
+comp z = force makediff l2 ;;
+z (Cons 200 Nil) ;; 
 
 # The inside of a linear function must be a value, and the distinguished 
 # variable must appear exactly once *within the term*.

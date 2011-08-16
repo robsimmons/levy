@@ -142,9 +142,12 @@ and interp_lin env y = function
       (match (interp env v1), (interp_lin env y v2) with
          | { contents = Zipped ({ contents = Zipper (v1, old_hole) } as r) }, 
            (v2, hole) ->
-           r := Invalid ; old_hole := !v2 ; (v1, hole)
+             r := Invalid ; 
+             if v2 == hole (* Reuse existing structure *)
+             then (v1, old_hole)
+             else (old_hole := !v2 ; (v1, hole))
          | { contents = Zipped { contents = Invalid } }, _ ->
-           runtime_error "Zipper reused more than once"
+             runtime_error "Zipper reused more than once"
 	 | _, _ -> runtime_error "Function expected in application")
   | e -> runtime_error ("expression " ^ string_of_expr e ^ " can't have holes")
 
