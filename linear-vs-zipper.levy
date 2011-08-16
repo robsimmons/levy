@@ -1,0 +1,83 @@
+# Turn a (tree -o tree) into a Huet-style tree zipper
+
+data Leaf: int -o tree 
+   | Node: tree -o tree -o tree ;;
+
+data Top: path 
+   | Left: path -o tree -o path
+   | Right: tree -o path -o path ;;
+
+$subord ;; 
+
+val zip_of_lin = thunk rec enzip: path -> (tree -o tree) -> F path is 
+  fun outside: path -> 
+  fun inside: (tree -o tree) -> 
+    match inside with
+      | [hole: tree] hole -> 
+          return outside
+      | [hole: tree] Node (left hole) right -> 
+          force enzip (Left outside right) left
+      | [hole: tree] Node left (right hole) ->  
+          force enzip (Right left outside) right ;;
+
+val lin_of_zip = thunk rec enlin: path -> (tree -o tree) -> F (tree -o tree) is 
+  fun outside: path ->
+  fun inside: (tree -o tree) ->
+    match outside with
+      | Top -> 
+          return inside
+      | Left path right -> 
+          force enlin path ([hole: tree] Node (inside hole) right)
+      | Right left path -> 
+          force enlin path ([hole: tree] Node left (inside hole)) ;;
+
+val lin_of_zip' = thunk rec enlin: path -> F (tree -o tree) is
+  fun path: path -> 
+    match path with
+      | Top -> return [hole: tree] hole
+      | Left path right -> 
+          force enlin path to lin in
+          return [hole: tree] lin (Node hole right)
+      | Right left path -> 
+          force enlin path to lin in
+          return [hole: tree] lin (Node left hole)
+
+val lin1 = [hole: tree]
+  Node
+   (Node 
+    (Node (Leaf 1) hole) 
+    (Node (Leaf 3) (Leaf 4)))
+   (Node 
+    (Node (Leaf 5) (Leaf 6)) 
+    (Node (Leaf 7) (Leaf 8))) ;;
+
+comp zip1 = force zip_of_lin Top lin1 ;;
+force lin_of_zip zip1 ([hole: tree] hole) ;; 
+force lin_of_zip' zip1 ;; 
+
+val lin2 = [hole: tree]
+  Node
+   (Node 
+    (Node (Leaf 1) (Leaf 2)) 
+    (Node (Leaf 3) (Leaf 4)))
+   (Node 
+    (Node (Leaf 5) hole) 
+    (Node (Leaf 7) (Leaf 8))) ;;
+
+comp zip2 = force zip_of_lin Top lin2 ;;
+force lin_of_zip zip2 ([hole: tree] hole) ;; 
+force lin_of_zip' zip2 ;; 
+
+val lin3 = [hole: tree]
+  Node
+   (Node 
+    (Node (Leaf 1) (Leaf 2)) 
+    (Node hole (Leaf 4)))
+   (Node 
+    (Node (Leaf 5) (Leaf 6)) 
+    (Node (Leaf 7) (Leaf 8))) ;;
+
+comp zip3 = force zip_of_lin Top lin3 ;;
+force lin_of_zip zip3 ([hole: tree] hole) ;; 
+force lin_of_zip' zip3 ;; 
+
