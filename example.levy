@@ -7,11 +7,11 @@
 # levy> $use "example.levy"
 
 
-# Basic arithmetic:
--4 + -3 ;;
+# Basic arithmetic: 
 2 + 2 ;;
 2 * 3 ;;
 2 - 4 ;;
+-4 + -3 ;; # There's no unary minus, but there are negative integer constants
 
 # Conditional statement (the then and else clauses must be
 # computations):

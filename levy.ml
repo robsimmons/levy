@@ -4,8 +4,10 @@ open Message
 open Syntax
 
 (**
-  The toplevel accepts global value definitions [let x = e] and expressions,
-  separated by double semicolons [;;] when contained in a file.
+  The toplevel accepts global value definitions as the result of evaluating
+  expressions [val x = e] or computations [comp x = e], as well as the top level
+  evaluation of expresions; each should be separated by double semicolons [;;] 
+  when contained in a file.
 
   Usage:
 
@@ -14,7 +16,7 @@ open Syntax
     [levy dat1 ... datN] evaluates the contents of files
     [dat1], ..., [datN] then runs the interactive loop.
 
-    [miniml -n dat1 ..., datN] evaluates the contents of files
+    [levy -n dat1 ..., datN] evaluates the contents of files
     [dat1],...,[datN] and exits.
 *)
 
