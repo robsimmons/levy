@@ -6,7 +6,7 @@ open Syntax
 (**
   The toplevel accepts global value definitions as the result of evaluating
   expressions [let x = e] or computations [do x = e], as well as the top level
-  evaluation of expresios; each should be separated by double semicolons [;;] 
+  evaluation of expresions; each should be separated by double semicolons [;;] 
   when contained in a file.
 
   Usage:
