@@ -6,7 +6,7 @@ module MapS =
   Map.Make(struct type t = string let compare = String.compare end)
 let consTable: (name, (vtype list * name)) Hashtbl.t = Hashtbl.create 5
 let dataTable: (name, (vtype list) MapS.t) Hashtbl.t = Hashtbl.create 5
-let subord: Closure.graph = Closure.new_graph ()
+let subord: Closure.graph = Closure.create 5
 
 (** Exception indicating a type-checking error. *)
 exception Type_error of string
@@ -61,10 +61,10 @@ let get_subord data =
       | VConst a -> a
       | VLolli (VConst b, ty) -> 
           let a = mapper ty in
-          Closure.add_edge subord (a, b) ; a 
+          Closure.add_edge subord (b, a) ; a 
       | VLolli (VInt, ty) -> 
           let a = mapper ty in
-          Closure.add_edge subord (a, "int") ; a           
+          Closure.add_edge subord ("int", a) ; a           
       | VLolli (VLolli _, ty) -> 
           mapper ty (* "No overlapping lambdas" thing is our friend here *) 
       | _ -> type_error ("internal: chk_data should have prevented this") in

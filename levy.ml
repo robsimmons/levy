@@ -62,9 +62,8 @@ let rec exec_cmd n (ctx, env) = function
   | Use fn -> exec_file n (ctx, env) fn
   | Subord -> 
       print_endline "Subordination for current datatypes:" ;
-      Closure.iter_paths
-        (fun s t -> print_endline (t ^ " <| " ^ s))
-        Type_check.subord ;
+      Closure.iter_paths Type_check.subord
+        (fun s t -> print_endline (s ^ " <| " ^ t)) ;
       (ctx, env)
 
 (** [exec_file (ctx, env) n fn] executes the contents of file [fn] in

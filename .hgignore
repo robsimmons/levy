@@ -3,4 +3,5 @@ syntax: glob
 *~
 _build/*
 levy.byte
+levy.d.byte
 parser.output

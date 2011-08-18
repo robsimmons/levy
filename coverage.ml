@@ -99,7 +99,7 @@ let rec cover_linear goals = function
           (fun pat -> pat) 
           (function 
              | Var x -> 
-                 if Closure.is_final subord (string_of_lambdaty ty) 
+                 if Closure.is_initial subord (string_of_lambdaty ty)
                  then Var "_"
                  else type_error ("Depth-1 pattern matching only: " ^
                                   "finding " ^ x ^ " in position " ^ 
@@ -125,7 +125,7 @@ let coverage_goals lty ty =
                     | VInt -> "int" 
                     | VConst a -> a
                     | _ -> "" in
-      if argty = lty || Closure.check_path subord (argty, lty) 
+      if argty = lty || Closure.path subord (lty, argty) 
       then (n+1, SetI.add n set)
       else (n+1, set) in
     let (_, goalset) = 
