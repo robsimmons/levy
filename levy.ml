@@ -3,7 +3,7 @@
 open Message
 open Syntax
 
-(**
+(** 
   The toplevel accepts global value definitions as the result of evaluating
   expressions [val x = e] or computations [comp x = e], as well as the top level
   evaluation of expresions; each should be separated by double semicolons [;;] 
