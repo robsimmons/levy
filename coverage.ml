@@ -169,17 +169,16 @@ let check_simple_coverage = function
 	
 (** [coverage e] does coverage checking on a well-typed expression [e] *)
 let rec coverage = function
-  | (Var _ | Int _ | Times _ | Plus _ | Minus _ | Equal _ | Less _) -> ()
-  | Const (_, vs, _) -> ignore (List.map coverage vs)
-  | Thunk e -> coverage e
-  | Force e -> coverage e
-  | Return e -> coverage e
-  | To (e1, _, e2) -> coverage e1 ; coverage e2
-  | Fun (_, _, e) -> coverage e
-  | Lin (_, _, e) -> coverage e
-  | Apply (e, v) -> coverage e ; coverage v
-  | Rec (_, _, e) -> coverage e
+  | (Var _ | Int _ | Times _ | Plus _ | Minus _ | Equal _ | Less _) as e -> e
+  | Const (c, vs, pos) -> Const (c, List.map coverage vs, pos)
+  | Thunk e -> Thunk (coverage e)
+  | Force e -> Force (coverage e)
+  | Return e -> Return (coverage e)
+  | To (e1, x, e2) -> To (coverage e1, x, coverage e2)
+  | Fun (x, ty, e) -> Fun (x, ty, coverage e)
+  | Lin (x, ty, e) -> Lin (x, ty, coverage e)
+  | Apply (e, v) -> Apply (coverage e, coverage v)
+  | Rec (x, ty, e) -> Rec (x, ty, coverage e)
   | Case (e, cases) -> 
-      coverage e ; 
-      check_simple_coverage cases ;  
-      ignore (List.map (fun (_, e) -> coverage e) cases)
+      check_simple_coverage cases ;
+      Case (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases)

@@ -32,7 +32,7 @@ let rec exec_cmd n (ctx, env) = function
   | Expr e ->
       (* type check [e], evaluate, and print result *)
       let ty = Type_check.type_of ctx [] e in
-      Coverage.coverage e ; 
+      let e = Coverage.coverage e in
       let v = Interpret.interp env e in
 	print_endline ((if Type_check.is_ctype ty then "comp " else "val ") ^
 			string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;
@@ -40,24 +40,26 @@ let rec exec_cmd n (ctx, env) = function
   | Def (x, e) ->
       (* type check [e], evaluate it and store *)
       let ty = Type_check.type_of ctx [] e in
-        Coverage.coverage e ;
-	Type_check.check_vtype ty ;
-	let v = Interpret.interp env e in
-        print_endline ("val " ^ x ^ " : " ^ string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;
-        ((x,ty)::ctx, (x,v)::env)
+      Type_check.check_vtype ty ;
+      let e = Coverage.coverage e in
+      let v = Interpret.interp env e in
+      print_endline ("val " ^ x ^ " : " ^ string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;
+      ((x,ty)::ctx, (x,v)::env)
   | RunDef (x, e) -> 
       (* type check [e], compute it and store *)
       let ty = Type_check.return e (Type_check.type_of ctx [] e) in
-        Coverage.coverage e ;
-        Type_check.check_vtype ty ;
-        let v = Interpret.interp env e in
-        print_endline ("val " ^ x ^ " : " ^ string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;
-        ((x,ty)::ctx, (x,v)::env)
+      Type_check.check_vtype ty ;
+      let e = Coverage.coverage e in
+      let v = Interpret.interp env e in
+      print_endline ("val " ^ x ^ " : " ^ string_of_type ty ^ " = " ^ Interpret.string_of_runtime v) ;
+      ((x,ty)::ctx, (x,v)::env)
   | Quit -> raise End_of_file
   | Data data ->
       Type_check.check_data data ;
-      print_endline ("data " ^ String.concat "\n   | " 
-        (List.map (fun (c, ty) -> c ^ ": " ^ string_of_type ty) data)) ;
+      print_endline ("data " ^ 
+		     String.concat "\n   | " 
+		       (List.map (fun (c, ty) -> c ^ ": " ^ string_of_type ty) 
+			  data)) ;
       (ctx, env)
   | Use fn -> exec_file n (ctx, env) fn
   | Subord -> 
@@ -75,15 +77,15 @@ and exec_file n ce fn =
   let lex = Message.lexer_from_channel fn fh in
     try
       let cmds = Parser.toplevel Lexer.token lex in
-	close_in fh ;
-	exec_cmds n ce cmds
+      close_in fh ;
+      exec_cmds n ce cmds
     with
-	Type_check.Type_error msg -> fatal_error (fn ^ ":\n" ^ msg)
-      | Interpret.Runtime_error msg -> fatal_error msg
-      | Sys.Break -> fatal_error "Interrupted."
-      | Parsing.Parse_error | Failure("lexing: empty token") ->
-	  fatal_error (Message.syntax_error lex)
-
+      Type_check.Type_error msg -> fatal_error (fn ^ ":\n" ^ msg)
+    | Interpret.Runtime_error msg -> fatal_error msg
+    | Sys.Break -> fatal_error "Interrupted."
+    | Parsing.Parse_error | Failure("lexing: empty token") ->
+	fatal_error (Message.syntax_error lex)
+	  
 (** [exec_cmds (ctx, env) n cmds] executes the list of toplevel
     commands [cmd] in the given context [ctx] and environment
     [env]. It forces evaluation of up to [n] levels of nesting of

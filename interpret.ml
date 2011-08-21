@@ -52,9 +52,9 @@ let bindpat = function
 let rec interp env = function
   | Var x ->
       (try
-	 List.assoc x env
-       with
-	   Not_found -> runtime_error ("Unknown variable " ^ x))
+	List.assoc x env
+      with
+	Not_found -> runtime_error ("Unknown variable " ^ x))
   | Int k -> ref (Boxed k)
   | Const (c, vs, None) -> ref (Tagged (c, List.map (interp env) vs, None))
   | Const (c, vs, Some n) -> runtime_error "Not supposed to be a hole here"
@@ -65,22 +65,22 @@ let rec interp env = function
   | Fun (x, _, e) -> ref (Closed (env, x, e))
   | Times (e1, e2) ->
       (match (interp env e1), (interp env e2) with
-	 | { contents = Boxed k1 }, { contents = Boxed k2 } -> 
+         | { contents = Boxed k1 }, { contents = Boxed k2 } -> 
              ref (Boxed (k1 * k2))
 	 | _ -> runtime_error "Integers expected in multiplication")
   | Plus (e1, e2) ->
       (match (interp env e1), (interp env e2) with
-	 | { contents = Boxed k1 }, { contents = Boxed k2 } -> 
+         | { contents = Boxed k1 }, { contents = Boxed k2 } -> 
              ref (Boxed (k1 + k2))
 	 | _ -> runtime_error "Integers expected in addition")
   | Minus (e1, e2) ->
       (match (interp env e1), (interp env e2) with
-	 | { contents = Boxed k1 }, { contents = Boxed k2 } -> 
+         | { contents = Boxed k1 }, { contents = Boxed k2 } -> 
              ref (Boxed (k1 - k2))
 	 | _ -> runtime_error "Integers expected in subtraction")
   | Equal (e1, e2) ->
       (match (interp env e1), (interp env e2) with
-	 | { contents = Boxed k1 }, { contents = Boxed k2 } -> mkbool (k1 = k2)
+         | { contents = Boxed k1 }, { contents = Boxed k2 } -> mkbool (k1 = k2)
 	 | _ -> runtime_error "Integers expected in =")
   | Less (e1, e2) ->
       (match (interp env e1), (interp env e2) with
@@ -91,21 +91,24 @@ let rec interp env = function
          | { contents = Boxed i } -> match_int env i pats
          | { contents = Tagged (c, vs, _) } -> match_struct env (c, vs) pats
          | { contents = Zipped { contents = Invalid } } -> 
-           runtime_error "Zipper reused more than once"
-         | { contents = Zipped ({ contents = 
-               Zipper ({ contents = Null }, hole) } as r) } -> 
-           r := Invalid ; match_linear_id env pats
-         | { contents = Zipped ({ contents = 
-               Zipper ({ contents = Tagged (c, vs, Some n) }, hole) } as r) }->
-           r := Invalid ; match_linear env (c, vs, n, hole) pats
+             runtime_error "Zipper reused more than once"
+         | { contents = 
+	     Zipped ({ contents = Zipper ({ contents = Null }, hole) }
+		       as r) } 
+	   -> r := Invalid ; match_linear_id env pats
+         | { contents = 
+	     Zipped ({ contents = 
+		       Zipper ({ contents = Tagged (c, vs, Some n) }, hole) }
+		       as r) } 
+	   -> r := Invalid ; match_linear env (c, vs, n, hole) pats
          | v -> match_whatever env v pats)
   | Apply (e1, e2) ->
       (match (interp env e1), (interp env e2) with
 	 | { contents = Closed (env, x, e) }, v2 -> interp ((x,v2)::env) e
          | { contents = Zipped ({ contents = Zipper (v, hole) } as r) }, v2 ->
-           r := Invalid ; hole := !v2 ; v
+             r := Invalid ; hole := !v2 ; v
          | { contents = Zipped { contents = Invalid } }, _ ->
-           runtime_error "Zipper reused more than once"
+             runtime_error "Zipper reused more than once"
 	 | _, _ -> runtime_error "Function expected in application")
   | To (e1, x, e2) -> interp ((x, interp env e1)::env) e2
   | Return e -> interp env e
