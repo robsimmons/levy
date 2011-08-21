@@ -257,3 +257,5 @@ and type_of ctx lctx = function
       check_ctype ty ;
       check ((x, VForget ty)::List.remove_assoc x ctx) [] ty e ;
       ty
+  | Case' _ ->
+      type_error "Case' statement found during typechecking (invariant)"

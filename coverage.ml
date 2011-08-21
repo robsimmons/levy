@@ -182,3 +182,5 @@ let rec coverage = function
   | Case (e, cases) -> 
       check_simple_coverage cases ;
       Case (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases)
+  | Case' _ -> 
+      type_error "Case' statement found during typechecking (invariant)"

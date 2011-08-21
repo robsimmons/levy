@@ -43,6 +43,7 @@ and expr =
   | Fun of name * ltype * expr 	  (** function [fun x:s -> e] *)
   | Apply of expr * value      	  (** application [e v] *)
   | Rec of name * ltype * expr 	  (** recursion [rec x : t is e] *)
+  | Case' of value * matches      (** interior case analysis *)
 
 and matches = (pattern * expr) list
 
@@ -105,6 +106,7 @@ let string_of_expr e =
 	| Fun (x, ty, e) ->   ( 2, "fun " ^ x ^ " : " ^ (string_of_type ty) ^ " -> " ^ (to_str 0 e))
 	| Rec (x, ty, e) ->   ( 2, "rec " ^ x ^ " : " ^ (string_of_type ty) ^ " is " ^ (to_str 0 e))
 	| To (e1, x, e2) ->   ( 1, to_str 1 e1 ^ " to " ^ x ^ " . " ^ to_str 0 e2)
+	| Case' _ -> (10, "match_internal")
     in
       if m > n then str else "(" ^ str ^ ")"
   in
@@ -138,6 +140,7 @@ let rec subst s = function
   | Thunk e -> Thunk (subst s e)
   | Apply (e1, e2) -> Apply (subst s e1, subst s e2)
   | Rec (x, ty, e) -> let s' = List.remove_assoc x s in Rec (x, ty, subst s' e)
+  | Case' _ -> raise Not_found 
 
 and subst_case s (pat, e) = (pat, subst (remove_assocs s [ pat ]) e)
 

@@ -102,6 +102,7 @@ let rec interp env = function
 		       as r) } 
 	   -> r := Invalid ; match_linear env (c, vs, n, hole) pats
          | v -> match_whatever env v pats)
+  | Case' _ -> runtime_error "Can't deal with Case' yet, need to work on that"
   | Apply (e1, e2) ->
       (match (interp env e1), (interp env e2) with
 	 | { contents = Closed (env, x, e) }, v2 -> interp ((x,v2)::env) e
