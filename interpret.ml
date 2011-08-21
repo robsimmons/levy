@@ -31,7 +31,7 @@ let mkbool = function
 
 let match_failure = function
   | [] -> runtime_error "Match failure"
-  | _ -> runtime_error "Bad pattern"
+  | (pat, _) :: _ -> runtime_error ("Bad pattern: " ^ string_of_expr pat)
 
 let rec string_of_runtime: runtime -> string = function
   | { contents = Null } -> "[]"
@@ -139,7 +139,30 @@ let rec interp env = function
 	       match_linear env (c, vs, n, orig, smaller) pats
              | Invalid -> runtime_error "Zipper reused more than once")
          | v -> match_whatever env v pats)
-  | Case' _ -> runtime_error "Can't deal with Case' yet, need to work on that"
+  | Case' (e, pats) -> 
+      (match interp env e with
+         | { contents = Zipped orig } ->
+             (match !orig with 
+             | Identity -> match_linear_id env orig pats
+             | Zipper (first, last) -> 
+               let rec follow_backptr r = 
+                 match !r with 
+                 | Tagged (c, rs, Some (n, r)) -> r
+                 | Null -> runtime_error ("Broken list invariant: wrong end")
+		 | _ -> runtime_error ("Tagged linear data expected, got " 
+                                       ^ string_of_runtime last) in
+               let smaller = 
+                 if !first == !last
+                 then Identity
+                 else Zipper (first, follow_backptr last) in
+               let (c, vs, n) = 
+                 match !last with
+                 | Tagged (c, vs, (Some (n, _))) -> (c, vs, n)
+                 | _ -> runtime_error ("Tagged linear data expected, got " 
+                                       ^ string_of_runtime first) in
+               match_linear_inside env (c, vs, n, orig, smaller) pats
+             | Invalid -> runtime_error "Zipper reused more than once")
+         | _ -> match_failure pats)
   | Apply (e1, e2) ->
       (match (interp env e1), (interp env e2) with
 	 | { contents = Closed (env, x, e) }, v2 -> interp ((x,v2)::env) e
@@ -227,9 +250,35 @@ and match_linear_id env orig = function
   | (Lin (_, _, Var x), e) :: _ -> 
       (orig := Invalid ; interp env e)
 
-  (* Miss - ([x] x) never matches ([x] c ...) *)
-  | (Lin (_, _, Const (_, _, _)), _) :: pats -> 
+  (* Miss - ([x] x) never matches ([x] c ...) or ([x] f (c ...)) *)
+  | (Lin (_, _, Const _), _) :: pats -> 
       match_linear_id env orig pats
+  | (Lin (_, _, Apply (Var _, Const _)), _) :: pats ->
+      match_linear_id env orig pats
+
+  | pats -> match_failure pats
+
+and match_linear_inside env (c, vs, n, orig, smaller) = function
+  (* Catch-all case *)
+  | ((Var x, e) :: _ | (Lin (_, _, Apply (Var x, Var _)), e) :: _) ->
+      interp ((x, ref (Zipped orig)) :: env) e
+
+  (* Miss - ([x] x) never matches ([x] c ...) *)
+  | (Lin (_, _, Var _), _) :: pats ->
+      match_linear_inside env (c, vs, n, orig, smaller) pats
+
+  (* Possible match *)
+  | (Lin (y, _, Apply (Var f, Const (c', vars, Some m))), e) :: pats ->
+      (* Assumed: that List.nth vars m = Var y *)
+      (* (The pattern would be rejected by coverage checking otherwise) *)
+      if c = c' && n = m
+      then (orig := Invalid ; 
+            let env' =
+              (f, ref (Zipped (ref smaller))) ::
+              (mapbut2 bindpat (fun _ _ -> ("_", ref Null)) vars vs (Some n)) @
+              env in
+            interp env' e)
+      else match_linear_inside env (c, vs, n, orig, smaller) pats
 
   | pats -> match_failure pats
 

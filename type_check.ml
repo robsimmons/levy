@@ -142,6 +142,9 @@ let rec pat_ty lctx ty = function
          | Some (lx, lty) -> 
              if y <> lx then type_error "Parser invariant violated (4)." ;
              [ (x, VLolli (lty, ty)) ])
+  | Apply (Var x, (Const (c, _, _) as pat)) -> 
+      let (_, a) = check_cons c in
+      (x, VLolli (VConst a, ty)) :: pat_ty lctx (VConst a) pat
   | Lin (lx, lty, pat) ->
       if lctx <> None then type_error "Parser invariant violated (5)." ; 
       (match ty with 

@@ -139,7 +139,6 @@ let coverage_goals lty ty =
   
   MapS.fold const_args (Hashtbl.find dataTable ty) starting_map
     
-    
 let check_simple_coverage = function
   | [] -> type_error "empty case analysis"
 	
@@ -180,7 +179,15 @@ let rec coverage = function
   | Apply (e, v) -> Apply (coverage e, coverage v)
   | Rec (x, ty, e) -> Rec (x, ty, coverage e)
   | Case (e, cases) -> 
-      check_simple_coverage cases ;
-      Case (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases)
+      (* Check for a possible inside-linear match *)
+      if List.exists 
+	  (function
+	    | (Lin (_, _, (Apply (Var _, Const _))), _) -> true
+	    | _ -> false) cases
+      then 
+        (Case' (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases))
+      else
+        (check_simple_coverage cases ;
+	 Case (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases))
   | Case' _ -> 
       type_error "Case' statement found during typechecking (invariant)"
