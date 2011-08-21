@@ -23,11 +23,20 @@ val pop = thunk fun queue: (q -o q) ->
 val getq = thunk fun opt: option -> 
   let (Some _ q) be opt in return q ;; 
 
+val isnone = thunk fun opt: option ->
+  let None be opt in return [x: q] x ;; 
+
 # Usage:
 
 comp q = force new ;;
 comp q = force push 3 q ;;
 comp q = force pop q to p in force getq p ;;
+comp q = force pop q to p in force isnone p ;;
+comp q = force push 6 q ;;
+comp q = force push 7 q ;;
+comp q = force pop q to p in force getq p ;;
+comp q = force pop q to p in force getq p ;;
+comp q = force pop q to p in force isnone p ;;
 comp q = force push 8 q ;;
 comp q = force push 9 q ;;
 comp q = force push 12 q ;;
@@ -40,4 +49,4 @@ comp q = force push 6 q ;;
 comp q = force pop q to p in force getq p ;;
 comp q = force pop q to p in force getq p ;;
 comp q = force pop q to p in force getq p ;;
-comp q = force pop q ;;
+comp q = force pop q to p in force isnone p ;;
