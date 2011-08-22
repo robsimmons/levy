@@ -11,7 +11,7 @@ let redundant_error pats =
     | n -> print_endline ("WARNING: at least " ^ n ^ " redundant cases") 
 
 let duplicate_error c = 
-  print_endline ("WARNING: duplicate (or vaculous) cases matching constructor "
+  print_endline ("WARNING: duplicate (or vacuous) cases matching constructor "
                  ^ c)
 
 let nonexhaustive_error missing = 
@@ -110,9 +110,15 @@ let rec cover_linear_inside goals = function
                                    "' where '" ^ x ^ "' was required."))
 	  pats' (Some n) in
       check_duplicate_variable_occurances pats'' ;
-      cover_linear_inside
-        (MapS.add c (SetI.remove n (MapS.find c goals)) goals) 
-        pats
+      if MapS.mem c goals 
+      then cover_linear_inside
+             (MapS.add c (SetI.remove n (MapS.find c goals)) goals) 
+             pats
+      (* This can happen if f's function type is impossible *) 
+      else (duplicate_error
+             (string_of_expr pat ^ " -- precluded by subordination: " ^ 
+              f ^ " has a type with no inhabitants") ; 
+            cover_linear_inside goals pats)
   | (Lin (x, ty, Const (c, pats', Some n)) as pat, _) :: pats ->
       (* This is only legal if the only function that could have been applied 
        * is the identity function *)

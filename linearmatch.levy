@@ -73,6 +73,12 @@ val casetree = thunk fun x: (tree -o tree) ->
     | [hole: tree] hole -> return false 
     | [hole: tree] f (Node i hole t1) -> return false ;;
 
+val reduntree = thunk fun x: (int -o tree) ->
+  match x with 
+    | [hole: int] f (Node hole t1 t2) -> return false
+    # Redundant (precluded because list isn't subordinate to tree)
+    | [hole: int] f (Cons hole _) -> return true ;;
+
 
 # Matching lets us duplicate lists
 
