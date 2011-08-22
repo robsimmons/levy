@@ -94,7 +94,7 @@ val safe_up = thunk fun loc : location ->
       # option types and don't want to write the
       # ascend function twice.
       force ascend path (Cons tree right) to loc' in
-      let (Apply path' tree') be loc in
+      let (Apply path' tree') be loc' in
       return Some path' tree')
 
 val safe_down = thunk fun loc : location ->
