@@ -1,0 +1,54 @@
+# Example from "Scrap Your Zippers", Michael D. Adams, WGP 2010. 
+
+# We don't have strings, so I'll make a haphazard type of names
+data Agamemnon: name
+   | Rob: name
+   | Menelaus: name
+   | KingAgamemnon: name
+   | Michael: name
+   | Achilles: name
+   | Frank: name
+   | Odysseus: name ;;
+
+data E: name -o int -o employee ;;
+
+data Nil: list
+   | Cons: employee -o list -o list ;;
+
+data D: employee -o list -o dept ;;
+
+# Here's where I really need polymorphic pairs, good grief: a location
+# over employees is really a pair of an ('a -o employee) and an 'a. 
+
+data PD: (dept -o dept) -o dept -o paird ;;
+data PE: (employee -o dept) -o employee -o paire ;;
+data PN: (name -o dept) -o name -o pairn ;;
+
+val agamemnon = E Agamemnon 5000
+val menelaus  = E Menelaus  3000
+val achilles  = E Achilles  2000
+val odysseus  = E Odysseus  2000
+val dept = D agamemnon (Cons menelaus (Cons achilles (Cons odysseus Nil)))
+
+val loc = PD ([hole: dept] hole) dept ;;
+
+# Move down and to the left
+comp loc = 
+  let (PD path dept) be loc in
+  let (D boss subord) be dept in
+  return PE
+    ([hole: employee] path (D hole subord))
+    boss ;;
+
+# Move down and to the left
+comp loc = 
+  let (PE path employee) be loc in
+  let (E name salary) be employee in
+  return PN
+    ([hole: name] path (E hole salary))
+    name ;;
+    
+# Replace the name
+comp revision = 
+  let (PN path name) be loc in
+  return path KingAgamemnon ;;
