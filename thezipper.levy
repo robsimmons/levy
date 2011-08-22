@@ -51,14 +51,66 @@ val ex2 =
    (Item Times) ;;
           
 
-# Navigation primitives in trees
+# Utility fuction
 
 val revappend = thunk rec revappend : list -> list -> F list is 
   fun xs : list ->
   fun ys : list -> 
     match xs with
       | Nil -> return ys
-      | Cons x xs -> force revappend xs (Cons x ys)
+      | Cons x xs -> force revappend xs (Cons x ys) ;;
+
+
+# Safe navagation primitives in trees
+data None: option
+   | Some: path -o tree -o option ;;
+
+val safe_left = thunk fun loc : location ->
+  let (Loc path tree) be loc in 
+  (match path with 
+  | Top -> return None
+  | Node left up right -> 
+      (match left with 
+      | Nil -> return None 
+      | Cons lsibling left -> 
+          return Some
+            (Node left up (Cons tree right))
+            lsibling)) ;;
+
+val safe_right = thunk fun loc : location ->
+  let (Loc path tree) be loc in
+  (match path with 
+  | Top -> return None
+  | Node left up right -> 
+      (match right with 
+      | Nil -> return None 
+      | Cons rsibling right -> 
+          return Some
+            (Node (Cons tree left) up right) 
+            rsibling)) ;;
+
+val safe_up = thunk fun loc : location ->
+  let (Loc path tree) be loc in
+  (match path with
+  | Top -> return None
+  | Node left up right -> 
+      force revappend left (Cons tree right) to trees in
+      return Some up (Section trees)) ;; 
+  
+val safe_down = thunk fun loc : location -> 
+  let (Loc path tree) be loc in 
+  (match tree with
+  | Item _ -> return None
+  | Section trees -> 
+      (match trees with
+      | Nil -> return None
+      | Cons child trees -> 
+          return Some 
+            (Node Nil path trees)
+            child)) ;; 
+
+
+# Unsafe navigation primitives in trees
 
 val go_left = thunk fun loc : location -> 
   let (Loc path tree) be loc in
@@ -81,5 +133,5 @@ val go_up = thunk fun loc : location ->
 val go_down = thunk fun loc : location ->
   let (Loc path tree) be loc in 
   let (Section trees) be tree in
-  let (Cons t1 trees) be trees in 
-  return Loc (Node Nil path trees) t1 ;;
+  let (Cons child trees) be trees in 
+  return Loc (Node Nil path trees) child ;;
