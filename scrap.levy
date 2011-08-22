@@ -17,18 +17,22 @@ data Nil: list
 
 data D: employee -o list -o dept ;;
 
+
+# Roll call!
+
+val agamemnon = E Agamemnon 5000 ;;
+val menelaus  = E Menelaus  3000 ;;
+val achilles  = E Achilles  2000 ;;
+val odysseus  = E Odysseus  2000 ;;
+val dept = D agamemnon (Cons menelaus (Cons achilles (Cons odysseus Nil))) ;;
+
+
 # Here's where I really need polymorphic pairs, good grief: a location
 # over employees is really a pair of an ('a -o employee) and an 'a. 
 
 data PD: (dept -o dept) -o dept -o paird ;;
 data PE: (employee -o dept) -o employee -o paire ;;
 data PN: (name -o dept) -o name -o pairn ;;
-
-val agamemnon = E Agamemnon 5000
-val menelaus  = E Menelaus  3000
-val achilles  = E Achilles  2000
-val odysseus  = E Odysseus  2000
-val dept = D agamemnon (Cons menelaus (Cons achilles (Cons odysseus Nil)))
 
 val loc = PD ([hole: dept] hole) dept ;;
 
