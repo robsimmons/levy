@@ -104,7 +104,7 @@ let string_of_expr e =
 	| Equal (e1, e2) ->   ( 5, (to_str 5 e1) ^ " = " ^ (to_str 5 e2))
 	| Less (e1, e2) ->    ( 5, (to_str 5 e1) ^ " < " ^ (to_str 5 e2))
         | Case (e, cases, _) -> ( 4, "match " ^ (to_str 4 e) ^ " with " ^ (to_str_cases cases))
-        | Lin (x, ty, e) ->   ( 3, "[" ^ x ^ ":" ^ (string_of_type ty) ^ "]" ^ (to_str 0 e))
+        | Lin (x, ty, e) ->   ( 3, "[" ^ x ^ ":" ^ (string_of_type ty) ^ "] " ^ (to_str 0 e))
 	| Fun (x, ty, e) ->   ( 2, "fun " ^ x ^ " : " ^ (string_of_type ty) ^ " -> " ^ (to_str 0 e))
 	| Rec (x, ty, e) ->   ( 2, "rec " ^ x ^ " : " ^ (string_of_type ty) ^ " is " ^ (to_str 0 e))
 	| To (e1, x, e2) ->   ( 1, to_str 1 e1 ^ " to " ^ x ^ " . " ^ to_str 0 e2)

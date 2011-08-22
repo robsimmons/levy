@@ -17,6 +17,21 @@ let duplicate_error c =
 let nonexhaustive_error missing = 
   print_endline ("WARNING: nonexaustive match, missing pattern: " ^ missing)
     
+let rec cover_whatever ty = function
+  (* Identity *)
+  | [ (Var x, _) ] -> () 
+  | (Var x, _) :: pats -> redundant_error pats
+	
+  (* eta-expanded identity *)
+  | [ (Lin (x, ty, Apply (Var _, Var _)), _) ] -> ()
+  | (Lin (x, ty, Apply (Var _, Var _)), _) :: pats -> redundant_error pats
+	
+  | [] -> nonexhaustive_error "_"
+  | (pat, _) :: pats -> type_error ("Bad pattern of type " ^ 
+                                    string_of_type ty ^ ": " ^
+                                    string_of_expr pat)
+
+
 (** Coverage checking at type int *)
 let rec cover_ints i = function
   | [] -> nonexhaustive_error (string_of_int (i + 1)) (* XXX bug at max_int *)
@@ -72,7 +87,7 @@ let rec cover_linear_inside goals = function
         let n = SetI.choose pos in 
         let (tys, _) = Hashtbl.find consTable c in
         let args = mapbut (fun _ -> "_") (fun _ -> "hole") tys (Some n) in
-        nonexhaustive_error ("[hole] _ (" ^ c ^ String.concat " " args ^ ")")
+        nonexhaustive_error ("[hole] _ (" ^ String.concat " " (c :: args) ^ ")")
   | ([ (Var _, _) ] | [ (Lin (_, _, Apply (Var _, Var _)), _) ]) -> 
       let unfinished_goals = 
         MapS.filter (fun _ set -> not (SetI.is_empty set)) goals in
@@ -155,8 +170,6 @@ let rec cover_linear goals = function
 	
 (** Calculate the coverage checking problem for a type with subordination *)
 let coverage_goals lty ty = 
-  let lty = string_of_lambdaty lty in
-  
   (* Get the set of relevant argument positions for a single constant *)
   let const_args c _ goalmap = 
     let folder (n, set) argty =
@@ -182,15 +195,15 @@ let coverage_goals_inside lty ty =
   (* For a list of types, find where the lty type occurs  *)
   let rec find_possible_holes n = function 
     | [] -> SetI.empty
-    | VConst ty' :: tys -> 
-      if lty = ty' 
+    | ty' :: tys ->
+      if lty = string_of_type ty'
       then SetI.add n (find_possible_holes (n+1) tys)
-      else find_possible_holes (n+1) tys 
-    | _ :: tys -> find_possible_holes (n+1) tys in
+      else find_possible_holes (n+1) tys in
 
   (* Collect patterns over all the predecessor types of ty *)
   let ty_args pred_ty goalmap = 
-    if Closure.path subord (lty, pred_ty) 
+    (* print_endline ("Checking " ^ pred_ty) ; *)
+    if Closure.path subord (pred_ty, ty)
     then MapS.fold 
           (* Potentially add a goal map... *)
           (fun c tys goalmap -> 
@@ -207,35 +220,25 @@ let coverage_goals_inside lty ty =
   let starting_map = 
     if ty = lty then (MapS.singleton "id" SetI.empty) else MapS.empty in
 
-  Closure.SetS.fold ty_args (Closure.imm_pred subord ty) starting_map
+  Closure.SetS.fold ty_args (Closure.imm_succ subord lty) starting_map
+	
+let rec print_linear_inside_goals goals = 
+  let goals = 
+    if MapS.mem "id" goals 
+    then (print_endline "[hole] hole" ; MapS.remove "id" goals)
+    else goals in
+  let unfinished_goals = 
+    MapS.filter (fun _ set -> not (SetI.is_empty set)) goals in
+  if not (MapS.is_empty unfinished_goals)
+  then 
+    (let (c, pos) = MapS.choose unfinished_goals in 
+    let n = SetI.choose pos in 
+    let (tys, _) = Hashtbl.find consTable c in
+    let args = mapbut (fun _ -> "_") (fun _ -> "hole") tys (Some n) in
+    print_endline ("[hole] _ (" ^ String.concat " " (c :: args) ^ ")") ;
+    print_linear_inside_goals 
+      (MapS.add c (SetI.remove n pos) (MapS.remove c goals))) 
 
-let check_simple_coverage = function
-  | [] -> type_error "empty case analysis"
-	
-  (* Identity *)
-  | [ (Var x, _) ] -> () (* Identity *)
-  | (Var x, _) :: pats -> redundant_error pats
-	
-  (* eta-expanded identity *)
-  | [ (Lin (x, ty, Apply (Var _, Var _)), _) ] -> ()
-  | (Lin (x, ty, Apply (Var _, Var _)), _) :: pats -> redundant_error pats
-	
-  (* Known constants *)
-  | (Int i, _) :: pats -> cover_ints i pats
-  | ((Const (c, _, None), _) :: _) as pats -> 
-      let (_, a) = Hashtbl.find consTable c in
-      let consts = Hashtbl.find dataTable a in
-      cover_defined consts pats
-  | ((Lin (_, ty, Var _), _) :: _) as pats ->
-      let goals = coverage_goals ty (string_of_lambdaty ty) in
-      cover_linear goals pats
-  | ((Lin (_, ty, Const (c, _, _)), _) :: _) as pats ->
-      let (_, a) = Hashtbl.find consTable c in
-      let goals = coverage_goals ty a in
-      cover_linear goals pats
-	
-  | _ -> type_error "type invariant violated (check_simple_coverage)"
-	
 (** [coverage e] does coverage checking on a well-typed expression [e] *)
 let rec coverage = function
   | (Var _ | Int _ | Times _ | Plus _ | Minus _ | Equal _ | Less _) as e -> e
@@ -249,15 +252,34 @@ let rec coverage = function
   | Apply (e, v) -> Apply (coverage e, coverage v)
   | Rec (x, ty, e) -> Rec (x, ty, coverage e)
   | Case' _ -> type_error "Case' statement found during typechecking?"
-  | Case (e, cases, r) -> 
+  | Case (e, cases, { contents = None}) -> type_error "Not typechecked!"
+  | Case (e, cases, ({ contents = Some VInt} as r)) -> 
+      cover_ints 0 cases ;
+      Case (coverage e, coverage_cases cases, r)
+  | Case (e, cases, ({ contents = Some (VConst a)} as r)) -> 
+      let consts = Hashtbl.find dataTable a in
+      cover_defined consts cases ;
+      Case (coverage e, coverage_cases cases, r)
+  | Case (e, cases, ({ contents = Some (VLolli (a, b))} as r)) ->
+      let lty = string_of_lambdaty a in
+      let ty = string_of_lambdaty b in
+
       (* Check for a possible inside-linear match *)
       if List.exists 
 	  (function
 	    | (Lin (_, _, (Apply (Var _, Const _))), _) -> true
 	    | _ -> false) cases
       then 
-        (Case' (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases))
+	(let goals = coverage_goals_inside lty ty in
+         (* print_endline "Goals:" ; print_linear_inside_goals goals *)
+         cover_linear_inside goals cases ;
+         Case' (coverage e, coverage_cases cases))
       else
-        (check_simple_coverage cases ;
-	 Case (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases,
-               r))
+        (let goals = coverage_goals lty ty in
+         cover_linear goals cases ;
+         Case (coverage e, coverage_cases cases, r))
+  | Case (e, cases, ({ contents = Some ty} as r)) ->
+      cover_whatever ty cases ;
+      Case (coverage e, coverage_cases cases, r)   
+
+and coverage_cases cases = List.map (fun (pat, e) -> (pat, coverage e)) cases

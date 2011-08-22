@@ -36,6 +36,44 @@ val caseint = thunk fun x: (int -o pair) ->
     | [hole: int] Pair blist (list hole) -> return 0 ;;
 
 
+# Demonstrates how coverage checking understands that different types can give
+# rise to different inside patterns:
+
+data Leaf: int -o tree
+   | Node: int -o tree -o tree -o tree ;;
+
+data Pair': list -o tree -o pair' ;;
+
+val caseints = thunk fun x: (int -o pair') ->
+  match x with
+    | [hole: int] f (Cons hole xs) -> return 0 
+    | [hole: int] f (Leaf hole) -> return 1 
+    | [hole: int] f (Node hole t1 t2) -> return 2 ;;
+
+data Z: even
+   | EO: even -o odd
+   | OE: odd -o even ;;
+
+val eo1 = thunk fun x: (even -o odd) ->
+  match x with
+    | [hole: even] EO (f hole) -> return f ;; 
+
+val eo2 = thunk fun x: (even -o odd) ->
+  match x with
+    | [hole: even] f (EO hole) -> return f ;; 
+
+val oe = thunk fun x: (odd -o odd) ->
+  match x with
+    | [hole: odd] hole -> return [hole: even] (EO hole)
+    | [hole: odd] f (OE hole) -> return f ;; 
+
+val casetree = thunk fun x: (tree -o tree) ->
+  match x with
+    | [hole: tree] f (Node i t1 hole) -> return false 
+    | [hole: tree] hole -> return false 
+    | [hole: tree] f (Node i hole t1) -> return false ;;
+
+
 # Matching lets us duplicate lists
 
 data LinPair: (list -o list) -o (list -o list) -o linpair ;; 
@@ -59,3 +97,4 @@ comp dxs1 = let (LinPair dxs1 _) be pair in return dxs1 ;;
 comp dxs2 = let (LinPair _ dxs2) be pair in return dxs2 ;;
 dxs1 (Cons 100 Nil) ;;
 dxs2 (Cons 200 Nil) ;;
+
