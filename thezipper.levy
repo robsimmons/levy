@@ -30,14 +30,11 @@ val ex1right =
 # "a * b + c * d"
 val ex1 = Section (Cons ex1left (Cons (Item Plus) (Cons ex1right Nil))) ;;
 
-# The lack of polymorphic lists works as a bit of a hairshirt here, as we see 
-# that the lists in the zipper structures are a bit different, and we want one 
-# that falls off to the left and another that falls off to the right. 
+# Zippers and locations
+# We suggestively switch the ordering of components in a location 
 
 data Top: path
    | Node: list -o path -o list -o path ;;
-
-# We suggestively switch the ordering of components in a location 
 
 data Loc: path -o tree -o location ;;
 

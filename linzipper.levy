@@ -1,0 +1,79 @@
+# Examples from Huet, G. "Functional Perl: The Zipper." J. Functional 
+# Programming 7(5): 549-554, September 1997.
+
+data A: item
+   | B: item
+   | C: item
+   | D: item
+   | Times: item
+   | Plus: item ;;
+
+data Item: item -o tree
+   | Section: list -o tree
+   | Nil: list
+   | Cons: tree -o list -o list ;;
+
+# "a * b"
+val ex1left = 
+  Section 
+   (Cons (Item A) 
+    (Cons (Item Times) 
+     (Cons (Item B) Nil))) ;;
+
+# "c * d"
+val ex1right = 
+  Section 
+   (Cons (Item A) 
+    (Cons (Item Times) 
+     (Cons (Item B) Nil))) ;;
+
+# "a * b + c * d"
+val ex1 = Section (Cons ex1left (Cons (Item Plus) (Cons ex1right Nil))) ;;
+
+# Zippers and locations. 
+
+data Apply: (tree -o tree) -o tree -o location ;;
+
+# The location of the second "*"
+val ex2right = [hole: tree]
+  Section 
+   (Cons (Item A) 
+    (Cons hole
+     (Cons (Item B) Nil))) ;;
+
+val ex2 = [hole: tree]
+  Section (Cons ex1left (Cons (Item Plus) (Cons (ex2right hole) Nil))) ;;
+
+# Navigation primitives in trees
+
+val ascend = thunk rec ascend : (list -o tree) -> list -> F location is
+  fun path : (list -o tree) ->
+  fun trees : list ->
+    match path with 
+      | [hole: list] path (Section hole) -> 
+          return Apply path (Section trees)
+      | [hole: list] path (Cons tree hole) ->
+          force ascend path (Cons tree trees) ;; 
+
+val go_left = thunk fun loc : location -> 
+  let (Apply path tree) be loc in  
+  let ([hole: tree] path (Cons hole right)) be path in
+  let ([hole: list] path (Cons lsibling hole)) be path in
+  return Apply ([hole: tree] path (Cons hole (Cons tree right))) lsibling ;; 
+
+val go_right = thunk fun loc : location ->
+  let (Apply path tree) be loc in
+  let ([hole: tree] path (Cons hole right)) be path in
+  let (Cons rsibling right) be right in 
+  return Apply ([hole: tree] path (Cons tree (Cons hole right))) rsibling ;;
+
+val go_up = thunk fun loc : location -> 
+  let (Apply path tree) be loc in
+  let ([hole: tree] path (Cons hole right)) be path in
+  force ascend path (Cons tree right) ;;
+
+val go_down = thunk fun loc : location ->
+  let (Apply path tree) be loc in 
+  let (Section trees) be tree in
+  let (Cons t1 trees) be trees in 
+  return Apply ([hole: tree] path (Section (Cons hole trees))) t1 ;;
