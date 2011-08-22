@@ -222,9 +222,10 @@ and type_of ctx lctx = function
       check ctx [] VInt e1 ; check ctx [] VInt e2 ; VConst "bool"
   | Less (e1, e2) -> 
       check ctx [] VInt e1 ; check ctx [] VInt e2 ; VConst "bool"
-  | Case (e, cases) ->
+  | Case (e, cases, r) ->
       let ty = type_of ctx [] e in
-        type_of_cases ctx ty cases None
+      r := Some ty ;
+      type_of_cases ctx ty cases None
   | Fun (x, ty, e) ->
       check_vtype ty ;
       let ty2 = type_of ((x,ty)::List.remove_assoc x ctx) [] e in

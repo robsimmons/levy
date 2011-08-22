@@ -112,7 +112,7 @@ let rec interp env = function
       (match (interp env e1), (interp env e2) with
 	 | { contents = Boxed k1 }, { contents = Boxed k2 } -> mkbool (k1 < k2)
 	 | _ -> runtime_error "Integers expected in <")
-  | Case (e, pats) -> 
+  | Case (e, pats, _) -> 
       (match interp env e with 
          | { contents = Boxed i } -> match_int env i pats
          | { contents = Tagged (c, vs, _) } -> match_struct env (c, vs) pats

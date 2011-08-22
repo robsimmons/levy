@@ -175,7 +175,7 @@ expr:
   | IF expr THEN expr ELSE expr  { Ex (cIf (mkEx $2, mkEx $4, mkEx $6)) }
   | FUN VAR COLON expr %prec FUN { Ex (Fun ($2, fst (mkFn $4), snd (mkFn $4))) }
   | REC VAR COLON expr IS expr  %prec REC { Ex (Rec ($2, mkTy $4, mkEx $6)) }
-  | MATCH expr WITH PIPE expr    { Ex (Case (mkEx $2, mkCases $5)) }
+  | MATCH expr WITH PIPE expr    { Ex (Case (mkEx $2, mkCases $5, ref None)) }
   | RETURN expr                  { Ex (Return (mkEx $2)) }
   | THUNK expr                   { Ex (Thunk (mkEx $2)) }
   | TFORGET expr                 { Ty (VForget (mkTy $2)) }

@@ -248,7 +248,8 @@ let rec coverage = function
   | Lin (x, ty, e) -> Lin (x, ty, coverage e)
   | Apply (e, v) -> Apply (coverage e, coverage v)
   | Rec (x, ty, e) -> Rec (x, ty, coverage e)
-  | Case (e, cases) -> 
+  | Case' _ -> type_error "Case' statement found during typechecking?"
+  | Case (e, cases, r) -> 
       (* Check for a possible inside-linear match *)
       if List.exists 
 	  (function
@@ -258,6 +259,5 @@ let rec coverage = function
         (Case' (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases))
       else
         (check_simple_coverage cases ;
-	 Case (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases))
-  | Case' _ -> 
-      type_error "Case' statement found during typechecking (invariant)"
+	 Case (coverage e, List.map (fun (pat, e) -> (pat, coverage e)) cases,
+               r))

@@ -38,7 +38,8 @@ and expr =
   | Force of value             	  (** [force v] *)
   | Return of value            	  (** [return v] *)
   | To of expr * name * expr  	  (** sequencing [e1 to x . e2] *)
-  | Case of value * matches       (** case analysis [match x with ...] *)
+  | Case of value * matches * vtype option ref 
+                                  (** case analysis [match x with ...] *)
   | Lin of name * ltype * value   (** linear function [[x:s] v] *)
   | Fun of name * ltype * expr 	  (** function [fun x:s -> e] *)
   | Apply of expr * value      	  (** application [e v] *)
@@ -48,9 +49,10 @@ and expr =
 and matches = (pattern * expr) list
 
 let cLet (pat, v, e) = 
-  Case (v, [ (pat, e) ])
+  Case (v, [ (pat, e) ], ref None)
 let cIf (v, et, ef) = 
-  Case (v, [ (Const ("true", [], None), et); (Const ("false", [], None), ef) ])
+  Case (v, [ (Const ("true", [], None), et); (Const ("false", [], None), ef) ],
+        ref None)
 let cApply (e, v) = 
   match e with
     | Const (x, vs, pos) -> Const (x, vs @ [ v ], pos)
@@ -101,7 +103,7 @@ let string_of_expr e =
 	| Minus (e1, e2) ->   ( 7, (to_str 6 e1) ^ " - " ^ (to_str 7 e2))
 	| Equal (e1, e2) ->   ( 5, (to_str 5 e1) ^ " = " ^ (to_str 5 e2))
 	| Less (e1, e2) ->    ( 5, (to_str 5 e1) ^ " < " ^ (to_str 5 e2))
-        | Case (e, cases) ->  ( 4, "match " ^ (to_str 4 e) ^ " with " ^ (to_str_cases cases))
+        | Case (e, cases, _) -> ( 4, "match " ^ (to_str 4 e) ^ " with " ^ (to_str_cases cases))
         | Lin (x, ty, e) ->   ( 3, "[" ^ x ^ ":" ^ (string_of_type ty) ^ "]" ^ (to_str 0 e))
 	| Fun (x, ty, e) ->   ( 2, "fun " ^ x ^ " : " ^ (string_of_type ty) ^ " -> " ^ (to_str 0 e))
 	| Rec (x, ty, e) ->   ( 2, "rec " ^ x ^ " : " ^ (string_of_type ty) ^ " is " ^ (to_str 0 e))
@@ -131,7 +133,7 @@ let rec subst s = function
   | Minus (e1, e2) -> Minus (subst s e1, subst s e2)
   | Equal (e1, e2) -> Equal (subst s e1, subst s e2)
   | Less (e1, e2) -> Less (subst s e1, subst s e2)
-  | Case (e, cases) -> Case (subst s e, List.map (subst_case s) cases)
+  | Case (e, cases, r) -> Case (subst s e, List.map (subst_case s) cases, r)
   | Fun (x, ty, e) -> let s' = List.remove_assoc x s in Fun (x, ty, subst s' e)
   | Lin (x, ty, e) -> let s' = List.remove_assoc x s in Fun (x, ty, subst s' e)
   | To (e1, x, e2) -> To (subst s e1, x, subst (List.remove_assoc x s) e2)
