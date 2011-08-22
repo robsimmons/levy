@@ -60,6 +60,45 @@ let string_of_lambdaty = function
   | lty -> type_error ("can't match against lambda binding a type " ^
                        string_of_type lty) 
 	
+(** Coverage checking for an interior linear function pattern *)
+let rec cover_linear_inside goals = function
+  | [] -> 
+      if MapS.mem "id" goals then nonexhaustive_error ("[hole] hole") ;
+      let unfinished_goals = 
+        MapS.filter (fun _ set -> not (SetI.is_empty set)) goals in
+      if not (MapS.is_empty unfinished_goals)
+      then 
+        let (c, pos) = MapS.choose unfinished_goals in 
+        let n = SetI.choose pos in 
+        let (tys, _) = Hashtbl.find consTable c in
+        let args = mapbut (fun _ -> "_") (fun _ -> "hole") tys (Some n) in
+        nonexhaustive_error ("[hole] _ (" ^ c ^ String.concat " " args ^ ")")
+  | ([ (Var _, _) ] | [ (Lin (_, _, Apply (Var _, Var _)), _) ]) -> 
+      let unfinished_goals = 
+        MapS.filter (fun _ set -> not (SetI.is_empty set)) goals in
+      if MapS.is_empty unfinished_goals then redundant_error [ () ]
+  | ((Var _, _) :: pats | (Lin (_, _, Apply (Var _, Var _)), _) :: pats) ->
+      redundant_error pats
+  | (Lin (x, ty, Var _), _) :: pats ->
+      if not (MapS.mem "id" goals)
+      then print_endline "WARNING: duplicate cases matching the identity" ;
+      cover_linear_inside (MapS.remove "id" goals) pats
+  | (Lin (x, ty, Apply (Var f, Const (c, pats', Some n))) as pat, _) :: pats ->
+      let pats'' = 
+        mapbut 
+          (fun pat -> pat) 
+          (function 
+            | Var x -> Var f (* Bit of a hack, to count all variables *)
+            | pat' -> type_error  ("Depth-1 pattern matching only: " ^
+                                   "in pattern '" ^ string_of_expr pat ^
+                                   "', found pattern '" ^ string_of_expr pat' ^ 
+                                   "' where '" ^ x ^ "' was required."))
+	  pats' (Some n) in
+      check_duplicate_variable_occurances pats'' ;
+      cover_linear_inside
+        (MapS.add c (SetI.remove n (MapS.find c goals)) goals) 
+        pats
+  | (pat, _) :: _ -> type_error ("Bad pattern: " ^ string_of_expr pat)
 	
 (** Coverage checking for a linear function pattern *)
 let rec cover_linear goals = function
@@ -74,7 +113,7 @@ let rec cover_linear goals = function
         let (tys, _) = Hashtbl.find consTable c in
         let args = 
           mapbut (fun _ -> "_") (fun _ -> "(_ hole)") tys (Some n) in 
-        nonexhaustive_error (String.concat " " ("[hole] " :: c :: args)) 
+        nonexhaustive_error (String.concat " " ("[hole]" :: c :: args)) 
   | ([ (Var _, _) ] | [ (Lin (_, _, Apply (Var _, Var _)), _) ]) -> 
       let unfinished_goals = 
         MapS.filter (fun _ set -> not (SetI.is_empty set)) goals in
@@ -112,7 +151,7 @@ let rec cover_linear goals = function
           pats' (Some n) in
       check_duplicate_variable_occurances pats'' ;
       cover_linear (MapS.add c (SetI.remove n (MapS.find c goals)) goals) pats
-  | _ -> type_error "type invariant violated"
+  | (pat, _) :: _ -> type_error ("Bad pattern: " ^ string_of_expr pat)
 	
 (** Calculate the coverage checking problem for a type with subordination *)
 let coverage_goals lty ty = 
@@ -139,6 +178,37 @@ let coverage_goals lty ty =
   
   MapS.fold const_args (Hashtbl.find dataTable ty) starting_map
     
+let coverage_goals_inside lty ty =
+  (* For a list of types, find where the lty type occurs  *)
+  let rec find_possible_holes n = function 
+    | [] -> SetI.empty
+    | VConst ty' :: tys -> 
+      if lty = ty' 
+      then SetI.add n (find_possible_holes (n+1) tys)
+      else find_possible_holes (n+1) tys 
+    | _ :: tys -> find_possible_holes (n+1) tys in
+
+  (* Collect patterns over all the predecessor types of ty *)
+  let ty_args pred_ty goalmap = 
+    if Closure.path subord (lty, pred_ty) 
+    then MapS.fold 
+          (* Potentially add a goal map... *)
+          (fun c tys goalmap -> 
+            let hole_locs = find_possible_holes 0 tys in
+            if SetI.is_empty hole_locs 
+            then goalmap
+            else MapS.add c hole_locs goalmap)
+          (* ...for each constructor of the predecessor type... *)
+          (Hashtbl.find dataTable pred_ty)
+          (* ...to the existing goal map *)
+          goalmap
+    else goalmap in
+
+  let starting_map = 
+    if ty = lty then (MapS.singleton "id" SetI.empty) else MapS.empty in
+
+  Closure.SetS.fold ty_args (Closure.imm_pred subord ty) starting_map
+
 let check_simple_coverage = function
   | [] -> type_error "empty case analysis"
 	
