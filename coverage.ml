@@ -113,6 +113,29 @@ let rec cover_linear_inside goals = function
       cover_linear_inside
         (MapS.add c (SetI.remove n (MapS.find c goals)) goals) 
         pats
+  | (Lin (x, ty, Const (c, pats', Some n)) as pat, _) :: pats ->
+      (* This is only legal if the only function that could have been applied 
+       * is the identity function *)
+      let (_, a) = Hashtbl.find consTable c in
+      if Closure.path subord (a, a)
+      then type_error ("Depth-1 pattern matching only: the pattern " ^
+                       string_of_expr pat ^ " is only legal if the only " ^ 
+                       " functions " ^ a ^ " -o " ^ a ^
+                       " are the identity.") ;
+      let pats'' = 
+        mapbut 
+          (fun pat -> pat) 
+          (function 
+            | Var x -> Var "_"
+            | pat' -> type_error  ("Depth-1 pattern matching only: " ^
+                                   "in pattern '" ^ string_of_expr pat ^
+                                   "', found pattern '" ^ string_of_expr pat' ^ 
+                                   "' where '" ^ x ^ "' was required."))
+	  pats' (Some n) in
+      check_duplicate_variable_occurances pats'' ;
+      cover_linear_inside
+        (MapS.add c (SetI.remove n (MapS.find c goals)) goals) 
+        pats
   | (pat, _) :: _ -> type_error ("Bad pattern: " ^ string_of_expr pat)
 	
 (** Coverage checking for a linear function pattern *)
@@ -202,8 +225,8 @@ let coverage_goals_inside lty ty =
 
   (* Collect patterns over all the predecessor types of ty *)
   let ty_args pred_ty goalmap = 
-    (* print_endline ("Checking " ^ pred_ty) ; *)
-    if Closure.path subord (pred_ty, ty)
+    print_endline ("Checking " ^ pred_ty) ; 
+    if pred_ty = ty || Closure.path subord (pred_ty, ty)
     then MapS.fold 
           (* Potentially add a goal map... *)
           (fun c tys goalmap -> 
@@ -215,7 +238,7 @@ let coverage_goals_inside lty ty =
           (Hashtbl.find dataTable pred_ty)
           (* ...to the existing goal map *)
           goalmap
-    else goalmap in
+    else (print_endline "Spurious." ; goalmap) in
 
   let starting_map = 
     if ty = lty then (MapS.singleton "id" SetI.empty) else MapS.empty in
@@ -271,7 +294,7 @@ let rec coverage = function
 	    | _ -> false) cases
       then 
 	(let goals = coverage_goals_inside lty ty in
-         (* print_endline "Goals:" ; print_linear_inside_goals goals *)
+         ( print_endline "Goals:" ; print_linear_inside_goals goals ) ;
          cover_linear_inside goals cases ;
          Case' (coverage e, coverage_cases cases))
       else

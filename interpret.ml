@@ -268,7 +268,18 @@ and match_linear_inside env (c, vs, n, orig, smaller) = function
       match_linear_inside env (c, vs, n, orig, smaller) pats
 
   (* Possible match *)
-  | (Lin (y, _, Apply (Var f, Const (c', vars, Some m))), e) :: pats ->
+  | (Lin (y, ty, pat), e) :: pats ->
+      let (f, c', vars, m) = 
+        match pat with
+        (* Optimized case *)
+        | Const (c', vars, Some m) -> 
+            (match smaller with 
+            | Identity -> ("_", c', vars, m) 
+            | _ -> runtime_error "Optimization failed, non-identity function")
+        (* Normal case *)
+        | Apply (Var f, Const (c', vars, Some m)) -> (f, c', vars, m) 
+        | _ -> match_failure ((Lin (y, ty, pat), e) :: pats) in
+
       (* Assumed: that List.nth vars m = Var y *)
       (* (The pattern would be rejected by coverage checking otherwise) *)
       if c = c' && n = m

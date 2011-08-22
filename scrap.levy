@@ -24,7 +24,10 @@ val agamemnon = E Agamemnon 5000 ;;
 val menelaus  = E Menelaus  3000 ;;
 val achilles  = E Achilles  2000 ;;
 val odysseus  = E Odysseus  2000 ;;
-val dept = D agamemnon (Cons menelaus (Cons achilles (Cons odysseus Nil))) ;;
+val dept = D agamemnon 
+  (Cons menelaus 
+   (Cons achilles 
+    (Cons odysseus Nil))) ;;
 
 
 # Here's where I really need polymorphic pairs, good grief: a location
@@ -34,6 +37,7 @@ data PD: (dept -o dept) -o dept -o paird ;;
 data PE: (employee -o dept) -o employee -o paire ;;
 data PN: (name -o dept) -o name -o pairn ;;
 
+# Create the zipper pair
 val loc = PD ([hole: dept] hole) dept ;;
 
 # Move down and to the left
@@ -51,8 +55,28 @@ comp loc =
   return PN
     ([hole: name] path (E hole salary))
     name ;;
-    
-# Replace the name
-comp revision = 
+
+# At this point, we could just replace the name
+
+#  comp revision = 
+#    let (PN path name) be loc in
+#    return path KingAgamemnon ;;
+
+# But we'll do things the hard way.
+
+# Moving up gives us an employee hole
+comp loc = 
   let (PN path name) be loc in
-  return path KingAgamemnon ;;
+  let ([hole: name] path (E hole salary)) be path in
+  return PE path (E KingAgamemnon salary) ;;
+
+# Moving up again gives us multiple cases: the
+# employee hole could be in the "wrong" place:
+
+comp loc = 
+  let (PE path employee) be loc in
+  match path with
+  | [hole: employee] D hole subord -> 
+      return D employee subord 
+  | [hole: employee] path (Cons hole other_subord) ->
+      return dept ;; # Error?
