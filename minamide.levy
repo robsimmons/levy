@@ -105,3 +105,31 @@ val hfun_binsert = thunk fun t: tree -> fun y: int ->
             else return k (Br x t1 t2) 
   in 
     force binsert' t y ([hole: tree] hole) ;;
+
+val addone = thunk rec addone: tree -> F tree is
+  fun t: tree ->
+    match t with
+      | Lf -> return Lf
+      | Br x t1 t2 -> 
+          force addone t1 to t1' in
+          force addone t2 to t2' in
+          return Br (x+1) t1' t2' ;;
+
+# Woah. This one's crazy.
+
+val hfun_addone = thunk rec hfun_addone: tree -> F tree is
+  fun t: tree ->
+    match t with
+      | Lf -> return Lf
+      | Br x t1 t2 ->
+          let addone' be thunk rec addone': tree -> (tree -o tree) -> F tree is
+            fun t: tree -> 
+            fun k: tree -o tree ->
+              match t with
+                | Lf -> return k Lf
+                | Br x t1 t2 ->  
+                    force hfun_addone t1 to t1' in 
+                    force addone' t2 ([hole: tree] Br (x+1) t1' hole)
+          in
+             force hfun_addone t1 to t1' in
+             force addone' t2 ([hole: tree] Br (x+1) t1' hole) ;;
