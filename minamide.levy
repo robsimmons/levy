@@ -1,3 +1,6 @@
+# Examples from Yasuhiko Minamide's 1998 POPL paper "A Functional 
+# Representation of Data Structures with a Hole."
+
 # Figure 2: Using Hole Abstractions for Lists
 # No polymorphic lists, blah.
 
@@ -70,7 +73,35 @@ comp ws = force hfun_flatten xss ;;
 
 
 # Figure 3: Using Hole Abstractions for Trees
+# No exceptions, so inserting an extant value just keeps the tree the same
 
 data Lf: tree
    | Br: int -o tree -o tree -o tree ;; 
 
+val binsert = thunk rec binsert: tree -> int -> F tree is
+  fun t: tree ->
+  fun y: int -> 
+    match t with
+      | Lf -> return Br y Lf Lf
+      | Br x t1 t2 ->
+          if y < x 
+          then force binsert t1 y to t1' in return Br x t1' t2
+          else if x < y 
+          then force binsert t2 y to t2' in return Br x t1 t2'
+          else return Br x t1 t2 ;; 
+
+val hfun_binsert = thunk fun t: tree -> fun y: int ->
+  let binsert' be thunk rec binsert': tree -> int -> (tree -o tree) -> F tree is
+    fun t: tree ->
+    fun y: int ->
+    fun k: (tree -o tree) ->
+      match t with
+        | Lf -> return k (Br y Lf Lf) 
+        | Br x t1 t2 -> 
+            if y < x 
+            then force binsert' t1 y ([hole: tree] k (Br x hole t2))
+            else if x < y
+            then force binsert' t2 y ([hole: tree] k (Br x t1 hole))
+            else return k (Br x t1 t2) 
+  in 
+    force binsert' t y ([hole: tree] hole) ;;
