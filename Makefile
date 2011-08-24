@@ -1,4 +1,4 @@
-TARGET=levy.d
+TARGET=levy
 
 SOURCES = \
 	syntax.ml \

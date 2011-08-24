@@ -1,0 +1,76 @@
+# Figure 2: Using Hole Abstractions for Lists
+# No polymorphic lists, blah.
+
+data Nil: list
+   | Cons: int -o list -o list ;;
+
+data NilL: llist
+   | ConsL: list -o llist -o llist ;; 
+
+# Append
+
+val append = thunk rec append: list -> list -> F list is 
+  fun xs: list -> 
+  fun ys: list -> 
+    match xs with
+      | Nil -> return ys
+      | Cons x xs -> 
+          force append xs ys to zs in
+          return Cons x zs ;;
+
+val hfun_append = thunk fun xs: list -> fun ys: list -> 
+  let append_rec be thunk rec append_rec: list -> (list -o list) -> F list is
+    fun xs: list -> 
+    fun k: (list -o list) ->
+      match xs with 
+        | Nil -> return k ys
+        | Cons x xs -> 
+            force append_rec xs ([hole: list] k (Cons x hole))
+  in 
+    force append_rec xs ([hole: list] hole) ;; 
+
+val xs = Cons 4 (Cons 5 (Cons 7 Nil)) ;;
+val ys = Cons 19 (Cons 23 (Cons 41 Nil)) ;;
+comp zs = force append xs ys ;;
+comp zs = force hfun_append xs ys ;;
+
+# Flatten
+
+val flatten = thunk rec flatten: llist -> F list is
+  fun xss: llist -> 
+    match xss with
+      | NilL -> return Nil
+      | ConsL xs xss -> 
+          force flatten xss to zs in
+          force append xs zs ;;
+
+val append' = thunk rec append': (list -o list) -> list -> F (list -o list) is
+  fun k: list -o list ->
+  fun xs: list ->
+    match xs with
+      | Nil -> return k
+      | Cons x xs -> 
+          force append' ([hole: list] k (Cons x hole)) xs ;;
+
+val hfun_flatten = thunk fun xss: llist ->
+  let flatten_rec be thunk rec flatten_rec: (list -o list) -> llist -> F list is
+    fun k: (list -o list) ->
+    fun xss: llist ->
+      match xss with
+        | NilL -> return k Nil
+        | ConsL xs xss -> 
+            force append' k xs to k' in
+            force flatten_rec k' xss 
+  in 
+    force flatten_rec ([hole: list] hole) xss ;; 
+
+val xss = ConsL xs (ConsL ys (ConsL zs (ConsL (Cons 0 Nil) NilL))) ;; 
+comp ws = force flatten xss ;;
+comp ws = force hfun_flatten xss ;; 
+
+
+# Figure 3: Using Hole Abstractions for Trees
+
+data Lf: tree
+   | Br: int -o tree -o tree -o tree ;; 
+
