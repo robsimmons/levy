@@ -244,7 +244,7 @@ let coverage_goals_inside lty ty =
           (Hashtbl.find dataTable pred_ty)
           (* ...to the existing goal map *)
           goalmap
-    else (print_endline "Spurious." ; goalmap) in
+    else ((* print_endline "Spurious." ; *) goalmap) in
 
   let starting_map = 
     if ty = lty then (MapS.singleton "id" SetI.empty) else MapS.empty in
@@ -300,7 +300,7 @@ let rec coverage = function
 	    | _ -> false) cases
       then 
 	(let goals = coverage_goals_inside lty ty in
-         ( print_endline "Goals:" ; print_linear_inside_goals goals ) ;
+         (* print_endline "Goals:" ; print_linear_inside_goals goals *) 
          cover_linear_inside goals cases ;
          Case' (coverage e, coverage_cases cases))
       else
