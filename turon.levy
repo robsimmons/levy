@@ -1,0 +1,50 @@
+# Map example from Aaron Turon
+
+data Up: dir
+   | Down: dir ;;
+
+data Leaf: int -o tree
+   | Branch: tree -o tree -o tree ;;
+
+data Zipper: (tree -o tree) -o tree -o zipper ;;
+
+val map = thunk fun f: U (int -> F int) -> fun tree: tree ->
+  let move be thunk rec move: dir -> (tree -o tree) -> tree -> F tree is
+    fun dir: dir ->
+    fun outside: (tree -o tree) ->
+    fun inside: tree -> 
+    match dir with
+    | Down -> 
+        (match inside with
+        | Leaf i -> 
+            force f i to i' in 
+            force move Up 
+              outside
+              (Leaf i')
+        | Branch t1 t2 -> 
+            force move Down 
+              ([hole: tree] outside (Branch hole t2))
+              t1)
+    | Up -> 
+        (match outside with 
+        | [hole: tree] hole -> return inside
+        | [hole: tree] outside (Branch hole t2) -> 
+            force move Down
+              ([hole: tree] outside (Branch inside hole))
+              t2
+        | [hole: tree] outside (Branch t1 hole) ->
+            force move Up
+              ([hole: tree] outside hole)
+              (Branch t1 inside))
+  in force move Down ([hole: tree] hole) tree ;;
+    
+val tree = 
+  Branch
+   (Branch
+    (Branch (Leaf 4) (Leaf 18))
+    (Branch (Leaf 9) (Leaf 3)))
+   (Branch  
+    (Leaf 2)
+    (Branch (Leaf 0) (Leaf 6))) ;;
+
+comp tree' = force map (thunk fun x: int -> return x * 2) tree ;;
