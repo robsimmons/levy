@@ -1,0 +1,49 @@
+# Clown/joker example on a non-homogenous map
+
+# "Jokers" - we'll start with a tree of ints
+data ILeaf: int -o itree
+   | IBranch: itree -o itree -o itree ;;
+
+# "Clowns" - we'll end up with a tree of bools
+data BLeaf: bool -o btree
+   | BBranch: btree -o btree -o btree ;;
+
+# Data structure representing a segment through a tree
+data Clowns: btree -o cj -o cj    # Clowns to the left of me
+   | Jokers: cj -o itree -o cj ;; # Jokers to the right
+
+# Data structure making do for the lack of mutual recursion
+data Up: btree -o dir
+   | Down: itree -o dir ;;
+
+val map = thunk fun f: U (int -> F bool) -> fun jokers: itree ->
+  let move be thunk rec move: (cj -o cj) -> dir -> F btree is
+    fun outside: (cj -o cj) ->
+    fun dir: dir ->
+    match dir with
+    | Down jokers ->
+        (match jokers with
+        | ILeaf i -> 
+            force f i to b in
+            force move outside (Up (BLeaf b))
+        | IBranch tl tr -> 
+            force move ([hole: cj] outside (Jokers hole tr)) (Down tl))
+    | Up clowns ->
+        (match outside with
+        | [hole: cj] hole -> return clowns
+        | [hole: cj] outside (Jokers hole tr) ->
+            force move ([hole: cj] outside (Clowns clowns hole)) (Down tr)
+        | [hole: cj] outside (Clowns tl hole) -> 
+            force move ([hole: cj] outside hole) (Up (BBranch tl clowns)))
+  in force move ([hole: cj] hole) (Down jokers) ;;
+
+val tree = 
+  IBranch
+   (IBranch
+    (IBranch (ILeaf 4) (ILeaf 18))
+    (IBranch (ILeaf 9) (ILeaf 3)))
+   (IBranch  
+    (ILeaf 2)
+    (IBranch (ILeaf 0) (ILeaf 6))) ;;
+
+comp tree' = force map (thunk fun x: int -> return x < 4) tree ;; 
