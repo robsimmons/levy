@@ -1,0 +1,148 @@
+\documentclass[twocolumn]{article}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{proof}
+\usepackage[usenames,dvipsnames]{color}
+
+\renewcommand{\c}[1]{\ensuremath{{\color{Mahogany} {#1}}}}
+\renewcommand{\v}[1]{\ensuremath{{\color{NavyBlue} {#1}}}}
+\newcommand{\comp}[1]{\ensuremath{{\color{Mahogany} \heartsuit {#1}}}}
+\newcommand{\carr}[2]{\ensuremath{{\color{Mahogany} {#1} \Rightarrow {#2}}}}
+\newcommand{\valu}[1]{\ensuremath{{\color{NavyBlue} \spadesuit {#1}}}}
+\newcommand{\varr}[2]{\ensuremath{{\color{NavyBlue} {#1} \supset {#2}}}}
+\newcommand{\atseq}[3]{\ensuremath{{\color{Mahogany} {#1}};
+                                  {\color{NavyBlue} {#2}}
+                                  \Vdash 
+                                  {\color{NavyBlue} {#3}}}\mathstrut}
+\newcommand{\avseq}[2]{\ensuremath{{\color{Mahogany} {#1}}
+                                  \Vdash 
+                                  {\color{Mahogany} {#2}}}\mathstrut}
+\begin{document}
+\title{Canonical forms = datatypes = abstract binding trees}
+\author{Robert J. Simmons}
+\maketitle
+
+\begin{abstract}
+\end{abstract}
+
+\section{Adjoint logic}
+
+We begin with an presentation of Reed's {\it adjoint logic}
+\cite{reed_judgmental}. The key idea of adjoint 
+logic is to modify Martin L\"of's {\it judgmental methadology} by ensuring
+that propositions which are judged differently belong to different syntactic
+classes \cite{lof_meaning}. 
+In the setting of Pfenning and Davies' judgmental reconstruction 
+of S4 modal logic \cite{pfenning_judgmental}, this means separating those
+propositions $\v{A}$ judged as {\it true} (which are collected in a context 
+$\v{\Gamma}$) and the propositions $\c{P}$ judged as 
+{\it valid} (which are collected in a context $\c{\Delta}$).
+\[
+\begin{array}{rrcl}
+\mbox{\it Judged as valid}
+ & \c{P}, \c{Q} & ::= & \valu{A} \mid \ldots\\
+\mbox{\it Judged as true}
+ & \v{A}, \v{B}, \v{C} & ::= & \comp{P} \mid \varr{A}{B} \mid \v{a}\\
+\mbox{\it Valid contexts}
+ & \c{\Delta} & ::= & \c{\cdot} \mid \c{\Delta, P} \\
+\mbox{\it True contexts}
+ & \v{\Gamma} & ::= & \v{\cdot} \mid \v{\Gamma, A} 
+\end{array}
+\]
+The sequent calculus presentation of adjoint logic is given in 
+Figure~\ref{fig:adjoint}.
+
+\begin{figure}[ht]
+\fbox{$\avseq{\Delta}{P}$}
+\fbox{$\atseq{\Delta}{\Gamma}{A}$}
+\[
+\infer[\it init_{valid}]
+{\avseq{\Delta, P}{P}}
+{\c{P} \neq \valu{A} \mathstrut}
+\qquad
+\infer[\it init_{true}]
+{\atseq{\Delta}{\Gamma, a}{a}}
+{}
+\]\[
+\infer[\spadesuit_R]
+{\avseq{\Delta}{\valu{A}}}
+{\atseq{\Delta}{\cdot}{A}}
+\qquad
+\infer[\spadesuit_L]
+{\atseq{\Delta, \valu{A}}{\Gamma}{C}}
+{\atseq{\Delta, \valu{A}}{\Gamma, A}{C}}
+\]\[
+\infer[\heartsuit_R]
+{\atseq{\Delta}{\Gamma}{\comp{P}}}
+{\avseq{\Delta}{P}}
+\qquad
+\infer[\heartsuit_L]
+{\atseq{\Delta}{\Gamma, \comp{P}}{C}}
+{\atseq{\Delta, P}{\Gamma, \comp{P}}{C}}
+\]\[
+\infer[\supset_R]
+{\atseq{\Delta}{\Gamma}{\varr{A}{B}}}
+{\atseq{\Delta}{\Gamma, A}{B}}
+\]\[\infer[\supset_L]
+{\atseq{\Delta}{\Gamma, A \supset B}{C}}
+{\atseq{\Delta}{\Gamma, A \supset B}{A} 
+ &
+ \atseq{\Delta}{\Gamma, A \supset B, B}{C}}
+\]
+\caption{Reed's sequent calculus for adjoint logic.}
+\label{fig:adjoint}
+\end{figure}
+
+
+The connection with the standard judgmental presentation of S4 
+modal logic can be made by declaring that 
+$\v{\Box A} \equiv \comp{\valu{A}}$. This formulation just makes
+explicit the long-recognized observation that the 
+introduction rule for modal necessity in Pfenning-Davies S4 decomposes
+into two rules, one non-invertable rule that clears the context 
+(this corresponds to $\heartsuit_R$) and one invertible rule that
+transitions from validity to truth. Below, we show the Pfenning-Davies
+decomposition of $\Box_R$ (left) and the adjoint logic view (right). 
+
+\[
+\infer
+{\Delta; \Gamma \vdash \Box A\,\mathit{true} \mathstrut}
+{\infer
+ {\Delta \vdash A\,\mathit{valid}\mathstrut}
+ {\Delta; \cdot \vdash A\,\mathit{true}}\mathstrut}
+\quad
+\infer[\heartsuit_R]
+{\atseq{\Delta}{\Gamma}{\comp{\valu{A}}}}
+{\infer[\spadesuit_R]
+ {\avseq{\Delta}{\valu{A}}}
+ {\atseq{\Delta}{\Gamma}{A}}} 
+\]
+
+
+
+The interesting difference between our presentation and
+Reed's is that we leave (for now) the language of propositions that 
+may be judged as valid entirely open-ended; the $\mathit{init_{valid}}$
+rule ensures that all such propositions will be effectively treated like
+atomic propositions from the perspective of the sequent calculus.
+
+
+The modalities  
+$\comp{P}$ and $\valu{A}$ used to mark the 
+inclusion of valid and true propositions into each other are admittedly
+hideous, but they avoid colliding with existing notation. Reed makes
+the adjoint nature of the modalities explicit, writing $\comp{P}$ as
+$\mathit{FP}$ and $\valu{A}$ as $\mathit{UA}$. The
+reason we do not use this notation is because we will eventually use 
+the types of adjoint logic as scaffolding for a language of 
+
+, in our eventual computational
+language, the call-by-push-value language's 
+$\mathit{U}$ very nearly corresponds with $\comp{P}$ and the 
+call-by-push-value language's $\mathit{F}$ very nearly corresponds with
+$\valu{A}$ -- exactly the oppositite association!
+
+
+
+
+\end{document}
