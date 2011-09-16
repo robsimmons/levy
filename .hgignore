@@ -5,3 +5,10 @@ _build/*
 levy.byte
 levy.d.byte
 parser.output
+
+*.aux
+*.bbl
+*.blg
+*.log
+*.pdf
+*.synctex.gz

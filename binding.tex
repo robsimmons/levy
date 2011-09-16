@@ -12,31 +12,157 @@
 \newcommand{\varr}[2]{\ensuremath{{\color{NavyBlue} {#1} \supset {#2}}}}
 \newcommand{\atseq}[3]{\ensuremath{{\color{Mahogany} {#1}};
                                   {\color{NavyBlue} {#2}}
-                                  \Vdash 
+                                  \longrightarrow 
                                   {\color{NavyBlue} {#3}}}\mathstrut}
 \newcommand{\avseq}[2]{\ensuremath{{\color{Mahogany} {#1}}
-                                  \Vdash 
+                                  \longrightarrow 
                                   {\color{Mahogany} {#2}}}\mathstrut}
+\newcommand{\ctcheck}[4]{\ensuremath{{\color{Mahogany} {#1}};
+                                     {\color{NavyBlue} {#2}}
+                                     \Vdash 
+                                     {\color{black} {#3}}
+                                     \Leftarrow
+                                     {\color{NavyBlue} {#4}}}\mathstrut}
+\newcommand{\cvcheck}[3]{\ensuremath{{\color{Mahogany} {#1}}
+                                     \Vdash 
+                                     {\color{black} {#2}}
+                                     \Leftarrow
+                                     {\color{Mahogany} {#3}}}\mathstrut}
+\newcommand{\ctinv}[5]{\ensuremath{{\color{Mahogany} {#1}};
+                                     {\color{NavyBlue} {#2}}
+                                     [{\color{black} {#3}}]
+                                     \Vdash 
+                                     {\color{black} {#4}}
+                                     \Leftarrow
+                                     {\color{NavyBlue} {#5}}}\mathstrut}
+\newcommand{\ctsynth}[4]{\ensuremath{{\color{Mahogany} {#1}};
+                                     {\color{NavyBlue} {#2}}
+                                     \Vdash 
+                                     {\color{black} {#3}}
+                                     \Rightarrow
+                                     {\color{NavyBlue} {#4}}}\mathstrut}
+\newcommand{\cvsynth}[3]{\ensuremath{{\color{Mahogany} {#1}}
+                                     \Vdash 
+                                     {\color{black} {#2}}
+                                     \Rightarrow
+                                     {\color{Mahogany} {#3}}}\mathstrut}
 \begin{document}
-\title{Canonical forms = datatypes = abstract binding trees}
+\title{Canonical forms as datatypes}
 \author{Robert J. Simmons}
 \maketitle
 
 \begin{abstract}
+We present a new proposal for programming languages that combine
+{\it representational} function spaces (which treat functions as data
+and interacts with them by case analysis) and a {\it computational} function
+spaces (which treat functions as code and uses them by application).
+Our treatment uses a modal logic to allow free intermixing
+of computational and representational {\it types} while maintaining the
+inviolability of structural properties on the representational level.
 \end{abstract}
+
+\section{Introduction}
+
+Given the following signature
+
+This paper fundamentally stems from my accidentally re-discovery of 
+the ideas in
+Yasuhiko Minamide's 1998 POPL paper ``A Functional Representation of 
+Data Structures with a Hole'' \cite{minamide98functional}. In this paper,
+I give a fundamental account of computing with the canonical
+forms of a lambda calculus. 
+
+This paper shows how Minamide's hole abstractions can be generalized
+(though we don't discuss linearity, which is essential to Minamide's 
+approach, it is a straightforward extension).
+
+
+and work on using modal type theory to compute with LF terms
+({\it a la} Beluga). We will begin by briefly surveying both Minamide's
+work and the history of computing with LF data.
+
+\subsection{Hole abstraction}
+
+The key idea of
+Minamide's work (and my accidental re-invention) was to introduce a new
+notion of function space to ML; this function space would be {\it linear},
+but more importantly it would be {\it non-computational}. In ML, the canonical 
+form of data with type \texttt{int list -> int list} is
+an {\it abstraction} -- an arbitrary computational function which may
+produce any side effect when a canonical form of type \texttt{int list}
+is applied to it. Abstractions are typically 
+represented in memory as a closure and a code pointer.
+
+The canonical form for data with type \texttt{int list -o int list}, on the
+other hand, is a {\it hole abstraction}, which must merely be a 
+{\it substitution function} -- a canonical form of \texttt{int list}
+with a \texttt{int list}-shaped piece missing. Hole abstractions 
+can be represented
+in memory as two pointers, one which points to the beginning of a normal
+datatype representation and another which points to an uninstantiated
+pointer where the missing piece belongs. This facilitates constant-time
+composition of hole abstractions and constant-time application of values
+to hole abstractions, at the cost that hole abstraction values are 
+{\it affine} -- they cannot be reused, since operations are implemented 
+by destructive pointer mutation.
+
+In this paper, we will discuss ``normal'' 
+persistent substitution functions, not linear 
+substitution functions; this means that our system is not ameanable
+to Minaide's optimizations. It would be straightfoward, however, to extend
+the work in this paper to linear logic. Such an extension would admit
+Minamide's system as a special case, and also uniformly account
+for a number of restrictions that Minamide had to treat in an ad-hoc way.
+
+\subsection{Computational and representational functions}
+
+Recent work by Harper, Licata, and Zielberger 
+\cite{licata08focusing,harper09pronominal,licata09universe}
+has given an extensive methadology for designing languages which integrate
+``normal'' functions, which they call {\it computational}, with 
+substitution-like function spaces, which they call {\it representational}.
+This ``pronominal'' approach is computationally powerful, but it allows
+for the interpretation of representational functions as substitution functions
+to be broken in certain instances. 
+
+The approach described in this paper uses techniques similar to 
+Harper, Licata, and Zielberger's work, but aims to protect substitution
+properties at all cost. It achieves this in two ways. First, it strictly
+eparates the type system that deals with representational
+functions (defined first) from the type system that deals with computational
+functions (defined second, and by reflection on the definition of the first
+system). Second, a variant of S4 modal is used 
+to prevent the pronominal variables associated with
+representational functions from interacting with computational types or 
+expressions.
+
+
+\subsection{Higher-order language definition}
+
+The first functional programming-based approach to computing with LF terms
+$\mathcal M_2^+$, was described in Sch\"urmann's thesis, but it was primarily
+intended as an alternate account for Twelf's logic programming-based notion
+of computation. The primary ; 
+while there are many differences between these
+proposals, 
+
+\subsection{Outline}
 
 \section{Adjoint logic}
 
 We begin with an presentation of Reed's {\it adjoint logic}
-\cite{reed_judgmental}. The key idea of adjoint 
+\cite{reed09judgmental}. The key idea of adjoint 
 logic is to modify Martin L\"of's {\it judgmental methadology} by ensuring
 that propositions which are judged differently belong to different syntactic
-classes \cite{lof_meaning}. 
+classes \cite{lof96meanings}. 
 In the setting of Pfenning and Davies' judgmental reconstruction 
-of S4 modal logic \cite{pfenning_judgmental}, this means separating those
+of S4 modal logic \cite{pfenning01judgmental}, this means separating those
 propositions $\v{A}$ judged as {\it true} (which are collected in a context 
 $\v{\Gamma}$) and the propositions $\c{P}$ judged as 
-{\it valid} (which are collected in a context $\c{\Delta}$).
+{\it valid} (which are collected in a context $\c{\Psi}$).
+
+The syntax of adjoint logic is given below; a variant of 
+Reed's sequent calculus presentation is shown in Figure~\ref{fig:adjoint}.
 \[
 \begin{array}{rrcl}
 \mbox{\it Judged as valid}
@@ -44,50 +170,48 @@ $\v{\Gamma}$) and the propositions $\c{P}$ judged as
 \mbox{\it Judged as true}
  & \v{A}, \v{B}, \v{C} & ::= & \comp{P} \mid \varr{A}{B} \mid \v{a}\\
 \mbox{\it Valid contexts}
- & \c{\Delta} & ::= & \c{\cdot} \mid \c{\Delta, P} \\
+ & \c{\Psi} & ::= & \c{\cdot} \mid \c{\Psi, P} \\
 \mbox{\it True contexts}
  & \v{\Gamma} & ::= & \v{\cdot} \mid \v{\Gamma, A} 
 \end{array}
 \]
-The sequent calculus presentation of adjoint logic is given in 
-Figure~\ref{fig:adjoint}.
 
-\begin{figure}[ht]
-\fbox{$\avseq{\Delta}{P}$}
-\fbox{$\atseq{\Delta}{\Gamma}{A}$}
+\begin{figure}[t]
+\fbox{$\avseq{\Psi}{P}$}
+\fbox{$\atseq{\Psi}{\Gamma}{A}$}
 \[
 \infer[\it init_{valid}]
-{\avseq{\Delta, P}{P}}
+{\avseq{\Psi, P}{P}}
 {\c{P} \neq \valu{A} \mathstrut}
 \qquad
 \infer[\it init_{true}]
-{\atseq{\Delta}{\Gamma, a}{a}}
+{\atseq{\Psi}{\Gamma, a}{a}}
 {}
 \]\[
 \infer[\spadesuit_R]
-{\avseq{\Delta}{\valu{A}}}
-{\atseq{\Delta}{\cdot}{A}}
+{\avseq{\Psi}{\valu{A}}}
+{\atseq{\Psi}{\cdot}{A}}
 \qquad
 \infer[\spadesuit_L]
-{\atseq{\Delta, \valu{A}}{\Gamma}{C}}
-{\atseq{\Delta, \valu{A}}{\Gamma, A}{C}}
+{\atseq{\Psi, \valu{A}}{\Gamma}{C}}
+{\atseq{\Psi, \valu{A}}{\Gamma, A}{C}}
 \]\[
 \infer[\heartsuit_R]
-{\atseq{\Delta}{\Gamma}{\comp{P}}}
-{\avseq{\Delta}{P}}
+{\atseq{\Psi}{\Gamma}{\comp{P}}}
+{\avseq{\Psi}{P}}
 \qquad
 \infer[\heartsuit_L]
-{\atseq{\Delta}{\Gamma, \comp{P}}{C}}
-{\atseq{\Delta, P}{\Gamma, \comp{P}}{C}}
+{\atseq{\Psi}{\Gamma, \comp{P}}{C}}
+{\atseq{\Psi, P}{\Gamma, \comp{P}}{C}}
 \]\[
 \infer[\supset_R]
-{\atseq{\Delta}{\Gamma}{\varr{A}{B}}}
-{\atseq{\Delta}{\Gamma, A}{B}}
+{\atseq{\Psi}{\Gamma}{\varr{A}{B}}}
+{\atseq{\Psi}{\Gamma, A}{B}}
 \]\[\infer[\supset_L]
-{\atseq{\Delta}{\Gamma, A \supset B}{C}}
-{\atseq{\Delta}{\Gamma, A \supset B}{A} 
+{\atseq{\Psi}{\Gamma, A \supset B}{C}}
+{\atseq{\Psi}{\Gamma, A \supset B}{A} 
  &
- \atseq{\Delta}{\Gamma, A \supset B, B}{C}}
+ \atseq{\Psi}{\Gamma, A \supset B, B}{C}}
 \]
 \caption{Reed's sequent calculus for adjoint logic.}
 \label{fig:adjoint}
@@ -97,8 +221,9 @@ Figure~\ref{fig:adjoint}.
 The connection with the standard judgmental presentation of S4 
 modal logic can be made by declaring that 
 $\v{\Box A} \equiv \comp{\valu{A}}$. This formulation just makes
-explicit the long-recognized observation that the 
-introduction rule for modal necessity in Pfenning-Davies S4 decomposes
+explicit the observation, implicit in Pfenning and Davies' original
+paper, that the 
+introduction rule for modal necessity decomposes
 into two rules, one non-invertable rule that clears the context 
 (this corresponds to $\heartsuit_R$) and one invertible rule that
 transitions from validity to truth. Below, we show the Pfenning-Davies
@@ -106,16 +231,16 @@ decomposition of $\Box_R$ (left) and the adjoint logic view (right).
 
 \[
 \infer
-{\Delta; \Gamma \vdash \Box A\,\mathit{true} \mathstrut}
+{\Psi; \Gamma \vdash \Box A\,\mathit{true} \mathstrut}
 {\infer
- {\Delta \vdash A\,\mathit{valid}\mathstrut}
- {\Delta; \cdot \vdash A\,\mathit{true}}\mathstrut}
-\quad
+ {\Psi \vdash A\,\mathit{valid}\mathstrut}
+ {\Psi; \cdot \vdash A\,\mathit{true}}\mathstrut}
+\qquad
 \infer[\heartsuit_R]
-{\atseq{\Delta}{\Gamma}{\comp{\valu{A}}}}
+{\atseq{\Psi}{\Gamma}{\comp{\valu{A}}}}
 {\infer[\spadesuit_R]
- {\avseq{\Delta}{\valu{A}}}
- {\atseq{\Delta}{\Gamma}{A}}} 
+ {\avseq{\Psi}{\valu{A}}}
+ {\atseq{\Psi}{\Gamma}{A}}} 
 \]
 
 
@@ -127,22 +252,167 @@ rule ensures that all such propositions will be effectively treated like
 atomic propositions from the perspective of the sequent calculus.
 
 
-The modalities  
+The symbols used for the modalities  
 $\comp{P}$ and $\valu{A}$ used to mark the 
 inclusion of valid and true propositions into each other are admittedly
-hideous, but they avoid colliding with existing notation. Reed makes
+hideous, but they avoid colliding with existing notation. 
+Reed makes
 the adjoint nature of the modalities explicit, writing $\comp{P}$ as
-$\mathit{FP}$ and $\valu{A}$ as $\mathit{UA}$. The
-reason we do not use this notation is because we will eventually use 
-the types of adjoint logic as scaffolding for a language of 
-
-, in our eventual computational
-language, the call-by-push-value language's 
+$\mathit{FP}$ and $\valu{A}$ as $\mathit{UA}$. Our eventual computational
+language, however, can very naturally be described in the context of 
+Levy's call-by-push value \cite{levy04call}. In this setting, 
 $\mathit{U}$ very nearly corresponds with $\comp{P}$ and the 
 call-by-push-value language's $\mathit{F}$ very nearly corresponds with
-$\valu{A}$ -- exactly the oppositite association!
+$\valu{A}$ -- exactly the oppositite association! 
+
+\subsection{Canonical forms for adjoint logic}
+
+\[
+\begin{array}{rrrl}
+\mbox{\it Neutral terms}
+ & R & ::= & c \mid x \mid u \mid R\,V\\
+\mbox{\it Normal terms}
+ & N, M & ::= & \lambda p.N \mid R \mid V\\
+ & &  & \mid \mathsf{let}~p=R~\mathsf{in}~N\\
+\mbox{\it True values}
+ & V & ::= & U \mid N\\
+\mbox{\it Valid values}
+ & U & ::= & u \mid \mathsf{closed}~N\\
+\mbox{\it Patterns}
+ & p & ::= & x \mid u
+\end{array}
+\]
+
+\begin{figure*}[t]
+\fbox{$\cvsynth{\Psi}{u}{P}$}
+\fbox{$\cvcheck{\Psi}{U}{P}$}
+\[
+\infer
+{\cvsynth{\Psi}{u}{P}}
+{u{:}\c{P} \in \c{\Psi}\mathstrut}
+\qquad
+\infer
+{\cvcheck{\Psi}{u}{P}}
+{\c{P} \neq \valu{A^-}
+ & 
+ \cvsynth{\Psi}{u}{P}}
+\qquad
+\infer
+{\cvcheck{\Psi}{\mathsf{closed}~N}{\valu{A^-}}}
+{\ctcheck{\Psi}{\cdot}{N}{A^-}}
+\]
+\fbox{$\ctsynth{\Psi}{\Gamma}{R}{A^-}$}
+\fbox{$\ctcheck{\Psi}{\Gamma}{N}{A^-}$}
+\[
+\infer
+{\ctsynth{\Psi}{\Gamma}{c}{A^-}}
+{c{:}\v{A^-} \in \Sigma\mathstrut}
+\qquad
+\infer
+{\ctsynth{\Psi}{\Gamma}{x}{A^-}}
+{x{:}\v{A^-} \in \v{\Gamma}\mathstrut}
+\qquad
+\infer
+{\ctsynth{\Psi}{\Gamma}{u}{A^-}}
+{\cvsynth{\Psi}{u}{\valu{A^-}}}
+\qquad
+\infer
+{\cvsynth{\Psi}{u}{P}}
+{u{:}\c{P} \in \c{\Psi}\mathstrut}
+\]
+\[
+\infer
+{\ctsynth{\Psi}{\Gamma}{R\,V}{B^-}}
+{\ctsynth{\Psi}{\Gamma}{R}{\varr{A^+}{B^-}}
+ &
+ \ctcheck{\Psi}{\Gamma}{V}{A^+}}
+\qquad
+\infer
+{\ctcheck{\Psi}{\Gamma}{\lambda p.N}{\varr{A^+}{B^-}}}
+{\ctinv{\Psi}{\Gamma}{p:\v{A^+}}{N}{B^-}}
+\]
+\[
+\infer
+{\ctcheck{\Psi}{\Gamma}{R}{a}}
+{\ctsynth{\Psi}{\Gamma}{R}{a}}
+\qquad
+\infer
+{\ctcheck{\Psi}{\Gamma}{V}{{\uparrow}A^+}}
+{\ctcheck{\Psi}{\Gamma}{V}{A^+}}
+\qquad
+\infer
+{\ctcheck{\Psi}{\Gamma}{\mathsf{let}~p=R~\mathsf{in}~N}{\gamma}}
+{\ctsynth{\Psi}{\Gamma}{R}{{\uparrow}A^+}
+ & 
+ \ctinv{\Psi}{\Gamma}{p:\v{A^+}}{N}{\gamma}}
+\]
+\fbox{$\ctcheck{\Psi}{\Gamma}{V}{A^+}$}
+\fbox{$\ctinv{\Psi}{\Gamma}{p:\v{A^+}}{N}{A^-}$}
+\[
+\infer
+{\ctcheck{\Psi}{\Gamma}{N}{{\downarrow}{A^-}}}
+{\ctcheck{\Psi}{\Gamma}{N}{A^-}}
+\qquad
+\infer
+{\ctinv{\Psi}{\Gamma}{x : \v{{\downarrow}A^-}}{N}{C^-}}
+{\ctcheck{\Psi}{\Gamma, {\color{black} x{:}}\v{A^-}}{N}{C^-}}
+\qquad
+\infer
+{\ctcheck{\Psi}{\Gamma}{U}{\comp{P}}}
+{\cvcheck{\Psi}{U}{P}}
+\qquad
+\infer
+{\ctinv{\Psi}{\Gamma}{u : \comp{P}}{N}{C^-}}
+{\ctcheck{\Psi, {\color{black} u{:}}P}{\Gamma}{N}{C^-}}
+\]
+\caption{Bidirectional typechecking for the $\beta$-normal 
+         $\eta$-long forms of adjoint logic.}
+\end{figure*}
+
+\section{Linearity and efficient data structures}
+
+\section{Contextual modal}
+
+\subsection{Computing with LF data}
+
+Harper, Honsell, and Plotkin's work on the Edinburgh Logical Framework (LF)
+\cite{harper93framework} showed that a rich set of mathematical structures
+could be faithfully encoded as {\it canonical forms} of a bare-bones dependent
+type theory. 
+
+A constructive proof ``for all structures $X$ there exists a structure $Y$'' 
+is, computationally, a function producing data of type $Y$ given data of
+type $X$; it was therefore natural that there would be attempts to 
+{\it compute} with the canonical forms of LF as a way of mechanizing
+such theorems. This proved to be difficult; for a long time, the only 
+practical contender was Twelf \cite{pfenning99system}, which used a logic 
+programming paradigm to capture computation. 
+
+It proved difficult to form reasonable programming 
+languages for computing with the canonical forms of LF. 
+For a long time, the only practical contender in this area
+was Twelf \cite{pfenning99system}, which used a logic programming paradigm
+to capture computation. One recent successful 
+
+In the last few years there have been two 
+successful proposals for computing with LF terms: 
+Delphin \cite{poswolsky08functional} and 
+Beluga \cite{pientka10beluga}.\footnote{This discussion is limited to 
+{\it language-based} approaches to dealing with LF encodings as data; 
+there has also been an explosion of work
+in {\it tool-based} appraoches to dealing with generally LF-like data in 
+existing proof assistants.} There are many differences between these 
+two systems,
+but one is particularly relevant. Delphin understands computation as taking
+place in a context which may include free LF variables; there is a special
+pattern-matching mechanisim for matching against a free LF variable. 
+Beluga, on the other hand, excludes LF variables from the computational 
+level; all LF data that is manipulated by the language carries around the
+a {\it local} LF context that contains its free variables.
 
 
 
+\bibliographystyle{alpha}
+\bibliography{ref}
 
 \end{document}
