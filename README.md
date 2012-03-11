@@ -58,10 +58,12 @@ A simple emacs highlighting mode for Levy is included; you can include it by
 adding the following text to your .emacs file, changing the levy-root directory
 to wherever the code for Levy was placed.
 
+```elisp
 ;; Setup for levy-mode
 (setq levy-root "/home/hqbovik/levy/")
 (load (concat levy-root "levy.el"))
 (add-to-list 'auto-mode-alist '("\\.levy\\'" . levy-mode))
+```
 
 
 # Compilation
