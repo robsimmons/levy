@@ -54,6 +54,15 @@ You need Objective Caml, http://caml.inria.fr/ version 3.10 or higher.
 If you have an older version of Objective Caml you can still compile
 the code by hand.
 
+A simple emacs highlighting mode for Levy is included; you can include it by 
+adding the following text to your .emacs file, changing the levy-root directory
+to wherever the code for Levy was placed.
+
+;; Setup for levy-mode
+(setq levy-root "/home/hqbovik/levy/")
+(load (concat levy-root "levy.el"))
+(add-to-list 'auto-mode-alist '("\\.levy\\'" . levy-mode))
+
 
 # Compilation
 
